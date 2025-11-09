@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, ListChecks } from 'lucide-react';
 import type { Student } from '@/lib/data';
 
 interface InactiveTeacher {
@@ -24,10 +24,12 @@ interface InactiveTeacher {
     schoolName: string;
     className: string;
     createdAt: Date | null;
+    inactivityReasons: string[];
 }
 
 interface InactiveStudent extends Student {
     teacherName: string;
+    inactivityReasons: string[];
 }
 
 export default function InactiveAccountsPage() {
@@ -38,6 +40,87 @@ export default function InactiveAccountsPage() {
     const [inactiveStudents, setInactiveStudents] = useState<InactiveStudent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const fetchInactiveData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const allTeachersSnapshot = await getDocs(query(collection(db, 'teachers'), orderBy('createdAt', 'desc')));
+            const foundInactiveTeachers: InactiveTeacher[] = [];
+            const foundInactiveStudents: InactiveStudent[] = [];
+
+            for (const teacherDoc of allTeachersSnapshot.docs) {
+                const teacherData = teacherDoc.data();
+                const teacherId = teacherDoc.id;
+                const reasons: string[] = [];
+
+                const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'students'));
+                const pendingStudentsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'pendingStudents'));
+                const hubsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'questHubs'));
+                const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'chapters'));
+                const boonsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'boons'));
+                
+                const hasOneOrFewerStudents = studentsSnapshot.size <= 1;
+                if (hasOneOrFewerStudents) reasons.push('1 or fewer students');
+
+                const hasNoPendingStudents = pendingStudentsSnapshot.empty;
+                if (hasNoPendingStudents) reasons.push('No pending students');
+                
+                const hasNoHubs = hubsSnapshot.empty;
+                if (hasNoHubs) reasons.push('No Quest Hubs');
+
+                const hasNoChapters = chaptersSnapshot.empty;
+                 if (hasNoChapters) reasons.push('No Chapters');
+                
+                const hasNoBoons = boonsSnapshot.empty;
+                 if (hasNoBoons) reasons.push('No custom rewards');
+                
+                const isTeacherInactive = hasOneOrFewerStudents && (hasNoPendingStudents || hasNoHubs || hasNoChapters || hasNoBoons);
+                
+                if (isTeacherInactive) {
+                    foundInactiveTeachers.push({
+                        id: teacherId,
+                        name: teacherData.name,
+                        email: teacherData.email,
+                        schoolName: teacherData.schoolName,
+                        className: teacherData.className,
+                        createdAt: teacherData.createdAt?.toDate() || null,
+                        inactivityReasons: reasons,
+                    });
+                }
+                
+                for (const studentDoc of studentsSnapshot.docs) {
+                    const studentData = studentDoc.data() as Student;
+                    const studentReasons: string[] = [];
+                    
+                    if ((studentData.xp ?? 0) === 0) studentReasons.push('0 XP');
+                    if ((studentData.gold ?? 0) === 0) studentReasons.push('0 Gold');
+                    if ((studentData.level ?? 1) === 1) studentReasons.push('Level 1');
+                    if (!studentData.questProgress || Object.keys(studentData.questProgress).length === 0) {
+                        studentReasons.push('No quest progress');
+                    }
+                    
+                    const isStudentInactive = studentReasons.length === 4;
+                    
+                    if (isStudentInactive) {
+                        foundInactiveStudents.push({
+                            ...studentData,
+                            uid: studentDoc.id,
+                            teacherName: teacherData.name,
+                            inactivityReasons: studentReasons,
+                        });
+                    }
+                }
+            }
+            setInactiveTeachers(foundInactiveTeachers);
+            setInactiveStudents(foundInactiveStudents.sort((a, b) => a.studentName.localeCompare(b.studentName)));
+
+        } catch (error) {
+            console.error("Error fetching inactive accounts:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load inactive account data.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
+    
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
@@ -54,74 +137,8 @@ export default function InactiveAccountsPage() {
             }
         });
         return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [router]);
+    }, [router, fetchInactiveData]);
 
-    const fetchInactiveData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const allTeachersSnapshot = await getDocs(query(collection(db, 'teachers'), orderBy('createdAt', 'desc')));
-            const foundInactiveTeachers: InactiveTeacher[] = [];
-            const foundInactiveStudents: InactiveStudent[] = [];
-
-            for (const teacherDoc of allTeachersSnapshot.docs) {
-                const teacherData = teacherDoc.data();
-                const teacherId = teacherDoc.id;
-
-                const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'students'));
-                const pendingStudentsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'pendingStudents'));
-                const hubsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'questHubs'));
-                const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'chapters'));
-                const boonsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'boons'));
-                
-                const hasOneOrFewerStudents = studentsSnapshot.size <= 1;
-                const hasNoPendingStudents = pendingStudentsSnapshot.empty;
-                const hasNoHubs = hubsSnapshot.empty;
-                const hasNoChapters = chaptersSnapshot.empty;
-                const hasNoBoons = boonsSnapshot.empty;
-                
-                const isTeacherInactive = hasOneOrFewerStudents && (hasNoPendingStudents || hasNoHubs || hasNoChapters || hasNoBoons);
-                
-                if (isTeacherInactive) {
-                    foundInactiveTeachers.push({
-                        id: teacherId,
-                        name: teacherData.name,
-                        email: teacherData.email,
-                        schoolName: teacherData.schoolName,
-                        className: teacherData.className,
-                        createdAt: teacherData.createdAt?.toDate() || null
-                    });
-                }
-                
-                for (const studentDoc of studentsSnapshot.docs) {
-                    const studentData = studentDoc.data() as Student;
-                    const questProgressEmpty = !studentData.questProgress || Object.keys(studentData.questProgress).length === 0;
-                    
-                    const isStudentInactive = studentData.xp === 0 &&
-                                              studentData.gold === 0 &&
-                                              studentData.level === 1 &&
-                                              questProgressEmpty;
-                    
-                    if (isStudentInactive) {
-                        foundInactiveStudents.push({
-                            ...studentData,
-                            uid: studentDoc.id,
-                            teacherName: teacherData.name
-                        });
-                    }
-                }
-            }
-            setInactiveTeachers(foundInactiveTeachers);
-            setInactiveStudents(foundInactiveStudents.sort((a, b) => a.studentName.localeCompare(b.studentName)));
-
-        } catch (error) {
-            console.error("Error fetching inactive accounts:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load inactive account data.' });
-        } finally {
-            setIsLoading(false);
-        }
-    }, [toast]);
-    
     if (!user) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>
@@ -137,6 +154,7 @@ export default function InactiveAccountsPage() {
                     <TableHead>Guild Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Date Registered</TableHead>
+                    <TableHead>Inactivity Criteria</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -147,6 +165,11 @@ export default function InactiveAccountsPage() {
                         <TableCell>{t.className}</TableCell>
                         <TableCell>{t.email}</TableCell>
                         <TableCell>{t.createdAt ? format(t.createdAt, 'PP') : 'N/A'}</TableCell>
+                        <TableCell>
+                            <ul className="list-disc list-inside text-xs">
+                                {t.inactivityReasons.map(reason => <li key={reason}>{reason}</li>)}
+                            </ul>
+                        </TableCell>
                     </TableRow>
                 ))}
             </TableBody>
@@ -160,6 +183,7 @@ export default function InactiveAccountsPage() {
                     <TableHead>Student Name</TableHead>
                     <TableHead>Character Name</TableHead>
                     <TableHead>Teacher</TableHead>
+                    <TableHead>Inactivity Criteria</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -168,6 +192,11 @@ export default function InactiveAccountsPage() {
                         <TableCell>{s.studentName}</TableCell>
                         <TableCell>{s.characterName}</TableCell>
                         <TableCell>{s.teacherName}</TableCell>
+                         <TableCell>
+                             <ul className="list-disc list-inside text-xs">
+                                {s.inactivityReasons.map(reason => <li key={reason}>{reason}</li>)}
+                            </ul>
+                        </TableCell>
                     </TableRow>
                 ))}
             </TableBody>
@@ -184,7 +213,7 @@ export default function InactiveAccountsPage() {
                     </Button>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Inactive Account Explorer</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><ListChecks className="h-6 w-6"/> Inactive Account Explorer</CardTitle>
                             <CardDescription>
                                 This tool identifies accounts with no significant gameplay or setup activity, helping you gauge user engagement.
                             </CardDescription>
