@@ -937,11 +937,6 @@ export default function Dashboard() {
                                 Release All from Meditation
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => router.push('/teacher/tools/archived-heroes')}>
-                                <Archive className="mr-2 h-4 w-4" />
-                                <span>Archived Heroes</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleClearAllBattleStatus(false)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                 <ShieldAlert className="mr-2 h-4 w-4" />
                                 <span>Clear All Battle Statuses</span>
