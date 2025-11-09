@@ -58,22 +58,34 @@ export default function InactiveAccountsPage() {
                 const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'chapters'));
                 const boonsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'boons'));
                 
+                let isTeacherInactive = false;
+                
                 const hasOneOrFewerStudents = studentsSnapshot.size <= 1;
-                if (hasOneOrFewerStudents) reasons.push('1 or fewer students');
-
                 const hasNoPendingStudents = pendingStudentsSnapshot.empty;
-                if (hasNoPendingStudents) reasons.push('No pending students');
-                
                 const hasNoCreatedHubs = hubsSnapshot.empty || (hubsSnapshot.size === 1 && hubsSnapshot.docs[0].data().name === 'Independent Chapters');
-                if (hasNoCreatedHubs) reasons.push('No custom Quest Hubs');
-
                 const hasNoChapters = chaptersSnapshot.empty;
-                 if (hasNoChapters) reasons.push('No Chapters');
-                
                 const hasNoBoons = boonsSnapshot.empty;
-                 if (hasNoBoons) reasons.push('No custom rewards');
-                
-                const isTeacherInactive = hasOneOrFewerStudents && (hasNoPendingStudents || hasNoCreatedHubs || hasNoChapters || hasNoBoons);
+
+                if (hasOneOrFewerStudents) {
+                    reasons.push('1 or fewer students');
+                }
+                if (hasNoPendingStudents) {
+                    reasons.push('No pending students');
+                }
+                if (hasNoCreatedHubs) {
+                    reasons.push('No custom Quest Hubs');
+                }
+                if (hasNoChapters) {
+                    reasons.push('No Chapters');
+                }
+                if (hasNoBoons) {
+                    reasons.push('No custom rewards');
+                }
+
+                // Corrected Logic: A teacher is inactive if they have 1 or fewer students AND at least one other inactivity reason.
+                if (hasOneOrFewerStudents && (hasNoPendingStudents || hasNoCreatedHubs || hasNoChapters || hasNoBoons)) {
+                    isTeacherInactive = true;
+                }
                 
                 if (isTeacherInactive) {
                     foundInactiveTeachers.push({
