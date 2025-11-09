@@ -3,9 +3,10 @@
 /**
  * @fileOverview A server-side flow for managing teacher accounts and data.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getFirestore as getClientFirestore } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { adminAuth as auth } from '@/lib/firebaseAdmin';
+import { adminApp, adminAuth as auth } from '@/lib/firebaseAdmin';
+import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { logGameEvent } from '@/lib/gamelog';
 
 
@@ -117,33 +118,34 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
         // Step 1: Delete the user from Firebase Authentication
         await auth.deleteUser(teacherUid);
 
-        // Step 2: Delete all Firestore data associated with the teacher
-        const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        // Step 2: Use Admin SDK to delete all Firestore data associated with the teacher
+        const adminDb = getAdminFirestore(adminApp);
+        const batch = adminDb.batch();
+
+        const studentsSnapshot = await adminDb.collection('teachers').doc(teacherUid).collection('students').get();
         const studentUids = studentsSnapshot.docs.map(doc => doc.id);
         
-        const teacherRef = doc(db, 'teachers', teacherUid);
+        const teacherRef = adminDb.collection('teachers').doc(teacherUid);
         const subcollections = ['students', 'pendingStudents', 'boons', 'pendingBoonRequests', 'boonTransactions', 'gameLog', 'bossBattles', 'savedBattles', 'questHubs', 'chapters', 'companies', 'groupBattleSummaries'];
 
         for (const sub of subcollections) {
-            const subcollectionRef = collection(teacherRef, sub);
-            const snapshot = await getDocs(subcollectionRef);
+            const subcollectionRef = teacherRef.collection(sub);
+            const snapshot = await subcollectionRef.get();
             if (!snapshot.empty) {
-                const subBatch = writeBatch(db);
-                snapshot.docs.forEach(d => subBatch.delete(d.ref));
-                await subBatch.commit();
+                snapshot.docs.forEach(d => batch.delete(d.ref));
             }
         }
         
-        await deleteDoc(teacherRef);
+        batch.delete(teacherRef);
         
         if (studentUids.length > 0) {
-            const studentMetaBatch = writeBatch(db);
             studentUids.forEach(uid => {
-                const studentMetaRef = doc(db, 'students', uid);
-                studentMetaBatch.delete(studentMetaRef);
+                const studentMetaRef = adminDb.collection('students').doc(uid);
+                batch.delete(studentMetaRef);
             });
-            await studentMetaBatch.commit();
         }
+        
+        await batch.commit();
         
         return { success: true, message: "Teacher account and all associated data have been permanently deleted." };
 

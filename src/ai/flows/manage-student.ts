@@ -9,9 +9,10 @@
  * - moderateStudent: Bans, unbans, or deletes a student's account.
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment, getFirestore as getClientFirestore } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { adminApp, adminAuth as auth } from '@/lib/firebaseAdmin';
+import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 
 
 interface ActionResponse {
@@ -236,7 +237,7 @@ export async function releaseAllFromMeditation(input: { teacherUid: string }): P
         });
 
         await batch.commit();
-        return { success: true, message: `Released ${'${querySnapshot.size}'} student(s) from the Meditation Chamber.` };
+        return { success: true, message: `Released ${querySnapshot.size} student(s) from the Meditation Chamber.` };
     } catch (error: any) {
         console.error("Error releasing all students from meditation:", error);
         return { success: false, error: "An unexpected error occurred while releasing students." };
@@ -346,22 +347,24 @@ interface ModerateStudentInput {
 
 export async function moderateStudent(input: ModerateStudentInput): Promise<ActionResponse> {
     const { teacherUid, studentUid, action } = input;
-    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-    const globalStudentRef = doc(db, 'students', studentUid);
 
     try {
+        const adminDb = getAdminFirestore(adminApp);
+        const studentRef = adminDb.doc(`teachers/${teacherUid}/students/${studentUid}`);
+        const globalStudentRef = adminDb.doc(`students/${studentUid}`);
+
         switch (action) {
             case 'ban':
                 await auth.updateUser(studentUid, { disabled: true });
-                await updateDoc(studentRef, { isArchived: true });
+                await studentRef.update({ isArchived: true });
                 return { success: true, message: 'Student account has been archived and disabled.' };
             case 'unban':
                 await auth.updateUser(studentUid, { disabled: false });
-                await updateDoc(studentRef, { isArchived: false });
+                await studentRef.update({ isArchived: false });
                  return { success: true, message: 'Student account has been restored.' };
             case 'delete':
                 await auth.deleteUser(studentUid);
-                const batch = writeBatch(db);
+                const batch = adminDb.batch();
                 batch.delete(studentRef);
                 batch.delete(globalStudentRef);
                 await batch.commit();
