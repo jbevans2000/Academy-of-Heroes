@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
@@ -119,6 +119,19 @@ export function LoginForm() {
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
       if (studentSnap.exists()) {
           const studentData = studentSnap.data();
+
+          if (studentData.deletionRequested) {
+              await user.delete();
+              // Also delete the lookup document
+              await deleteDoc(studentMetaRef);
+              toast({
+                  title: 'Account Deleted',
+                  description: 'This account has been successfully deleted as requested by the Guild Leader.',
+                  duration: 8000,
+              });
+              await signOut(auth);
+              return;
+          }
 
           if (studentData.isArchived) {
               await signOut(auth);

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A server-side flow for managing student accounts and data.
@@ -314,5 +315,21 @@ export async function removeShadowMark(input: ShadowMarkInput): Promise<ActionRe
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message || 'Failed to remove Shadow Mark.' };
+    }
+}
+
+interface InitiateStudentDeletionInput {
+    teacherUid: string;
+    studentUid: string;
+}
+
+export async function initiateStudentDeletion(input: InitiateStudentDeletionInput): Promise<ActionResponse> {
+    try {
+        const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+        await updateDoc(studentRef, { deletionRequested: true });
+        return { success: true };
+    } catch (e: any) {
+        console.error("Error flagging student for deletion:", e);
+        return { success: false, error: e.message || 'Failed to flag student for deletion.' };
     }
 }

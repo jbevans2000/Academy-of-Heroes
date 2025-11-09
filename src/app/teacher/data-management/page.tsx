@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Trash2, Loader2, DatabaseZap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteStudent } from '@/ai/flows/admin-actions';
+import { initiateStudentDeletion } from '@/ai/flows/manage-student';
 
 
 export default function DataManagementPage() {
@@ -68,23 +68,23 @@ export default function DataManagementPage() {
         setIsDeleting(true);
         
         try {
-            const result = await deleteStudent({
+            const result = await initiateStudentDeletion({
                 teacherUid: teacher.uid,
                 studentUid: studentToDelete.uid
             });
 
             if (result.success) {
                 toast({
-                    title: 'Student Deleted',
-                    description: `${studentToDelete.studentName}'s account and all associated data have been permanently deleted.`,
+                    title: 'Deletion Initiated',
+                    description: `${studentToDelete.studentName}'s account is now flagged. It will be permanently deleted upon their next login attempt.`,
+                    duration: 8000,
                 });
-                // The onSnapshot listener will automatically update the UI
             } else {
-                throw new Error(result.error || 'An unknown error occurred during deletion.');
+                throw new Error(result.error || 'An unknown error occurred during deletion initiation.');
             }
 
         } catch (error: any) {
-            console.error("Error deleting student:", error);
+            console.error("Error initiating student deletion:", error);
             toast({
                 variant: 'destructive',
                 title: 'Deletion Failed',
@@ -181,13 +181,13 @@ export default function DataManagementPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the login account and all game data for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong>. This action cannot be undone.
+                            This will flag the account for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong> for deletion. The account and all associated data will be permanently removed the next time this user attempts to log in. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete Account & Data'}
+                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Flag for Deletion'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
