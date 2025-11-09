@@ -908,8 +908,8 @@ export default function Dashboard() {
                                 <span>Manage Quest Completion</span>
                             </DropdownMenuItem>
                              <DropdownMenuItem onClick={() => router.push('/teacher/data-management')}>
-                                <DatabaseZap className="mr-2 h-4 w-4" />
-                                <span>Data Management</span>
+                                <UserX className="mr-2 h-4 w-4" />
+                                <span>Retire Heroes</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
                                 <BarChart className="mr-2 h-4 w-4" />
