@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -20,7 +21,7 @@ import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/ma
 import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power, Users } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -1242,6 +1243,11 @@ export default function AdminDashboardPage() {
                              <Button className="w-full justify-start" asChild>
                                 <Link href="/admin/tools/about-page-editor">
                                     <Edit className="mr-2 h-4 w-4" /> About Page Editor
+                                </Link>
+                            </Button>
+                            <Button className="w-full justify-start" asChild>
+                                <Link href="/admin/tools/inactive-accounts">
+                                    <Users className="mr-2 h-4 w-4" /> Inactive Account Explorer
                                 </Link>
                             </Button>
                         </CardContent>
