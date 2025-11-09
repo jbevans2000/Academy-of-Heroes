@@ -95,6 +95,21 @@ export function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const user = userCredential.user;
 
+      // Check for deletion flag
+      const deletedUserRef = doc(db, 'deleted-users', user.uid);
+      const deletedUserSnap = await getDoc(deletedUserRef);
+      if (deletedUserSnap.exists() && deletedUserSnap.data().deletionRequested) {
+          await user.delete();
+          await deleteDoc(deletedUserRef);
+          toast({
+              title: 'Account Deleted',
+              description: 'This account has been successfully deleted as requested by the Guild Leader.',
+              duration: 8000,
+          });
+          await signOut(auth);
+          return;
+      }
+
       // POST-LOGIN MAINTENANCE CHECK
       const settings = await getGlobalSettings();
       // Always allow the master admin to log in
@@ -113,30 +128,35 @@ export function LoginForm() {
         teacherUid = studentMetaSnap.data().teacherUid;
         isApproved = studentMetaSnap.data().approved;
       } else {
-        throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
+        // Even if the meta doc is gone, the teacher might still have the student record.
+        // This is a recovery mechanism.
+        // We'll have to query all teachers to find the student. This is slow but necessary for recovery.
+        const teachersSnapshot = await getDoc(collection(db, 'teachers'));
+        for (const teacherDoc of teachersSnapshot.docs) {
+            const studentRef = doc(teacherDoc.ref, 'students', user.uid);
+            const studentSnap = await getDoc(studentRef);
+            if (studentSnap.exists()) {
+                teacherUid = teacherDoc.id;
+                // Re-create the meta document
+                await setDoc(studentMetaRef, { teacherUid, approved: studentSnap.data().isArchived ? false : true });
+                isApproved = studentSnap.data().isArchived ? false : true;
+                break;
+            }
+        }
+      }
+
+      if (!teacherUid) {
+         throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
       }
 
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
       if (studentSnap.exists()) {
           const studentData = studentSnap.data();
 
-          if (studentData.deletionRequested) {
-              await user.delete();
-              // Also delete the lookup document
-              await deleteDoc(studentMetaRef);
-              toast({
-                  title: 'Account Deleted',
-                  description: 'This account has been successfully deleted as requested by the Guild Leader.',
-                  duration: 8000,
-              });
-              await signOut(auth);
-              return;
-          }
-
           if (studentData.isArchived) {
-              await signOut(auth);
-              router.push('/account-archived');
-              return;
+            await signOut(auth);
+            router.push('/account-archived');
+            return;
           }
 
           if (!isApproved) {
@@ -152,7 +172,6 @@ export function LoginForm() {
 
           router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
       } else {
-         await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherUid, approved: false });
          await signOut(auth);
          throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
       }

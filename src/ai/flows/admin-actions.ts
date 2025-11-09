@@ -4,6 +4,7 @@
  * @fileOverview A secure, server-side flow for admin-only actions like deleting users.
  */
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface ActionResponse {
   success: boolean;
@@ -60,19 +61,14 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
         
         // Then, delete the main teacher document.
         await adminDb.collection('teachers').doc(teacherUid).delete();
+        
+        // Flag for auth deletion on next login
+        await adminDb.collection('deleted-users').doc(teacherUid).set({ deletionRequested: true });
 
-        // Finally, attempt to delete the user from Firebase Authentication.
-        // This might fail if the token is expired, but the data will be gone.
-        await adminAuth.deleteUser(teacherUid);
-
-        return { success: true, message: "Teacher and all associated data have been deleted." };
+        return { success: true, message: "Teacher data has been deleted. Their login account will be removed upon their next login attempt." };
     } catch (error: any) {
-        console.error("Error deleting teacher:", error);
-        // If the error is specifically about auth deletion, we can still consider it a partial success.
-        if (error.code === 'auth/user-not-found' || error.message.includes('Could not refresh access token')) {
-            return { success: true, message: 'Teacher data deleted, but the auth account could not be removed automatically. It may need to be removed manually from the Firebase Console.' };
-        }
-        return { success: false, error: error.message || 'An unknown error occurred while deleting the teacher.' };
+        console.error("Error deleting teacher data:", error);
+        return { success: false, error: error.message || 'An unknown error occurred while deleting the teacher data.' };
     }
 }
 
@@ -104,17 +100,14 @@ export async function deleteStudent({ teacherUid, studentUid }: DeleteStudentInp
 
         await batch.commit();
         
-        // Then, attempt to delete the user from Authentication.
-        // This is the part that might fail, but the user is already "gone" from the app's perspective.
-        await adminAuth.deleteUser(studentUid);
+        // Then, flag the user for auth deletion on their next login.
+        // This is more reliable than trying to delete the auth user from the server here.
+        await adminDb.collection('deleted-users').doc(studentUid).set({ deletionRequested: true });
         
-        return { success: true, message: "Student account and all associated data have been deleted." };
+        return { success: true, message: "Student data has been deleted. Their login account will be removed upon their next login attempt." };
 
     } catch (error: any) {
         console.error("Error deleting student:", error);
-         if (error.code === 'auth/user-not-found' || error.message.includes('Could not refresh access token')) {
-            return { success: true, message: 'Student data deleted, but the login account could not be removed automatically. It may need to be removed manually from the Firebase Console.' };
-        }
         return { success: false, error: error.message || 'An unknown error occurred while deleting the student.' };
     }
 }

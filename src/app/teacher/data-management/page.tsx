@@ -60,8 +60,8 @@ export default function DataManagementPage() {
         return () => unsubscribe();
     }, [teacher]);
 
-    const activeStudents = useMemo(() => students.filter(s => !s.isHidden), [students]);
-    const hiddenStudents = useMemo(() => students.filter(s => s.isHidden), [students]);
+    const activeStudents = useMemo(() => students.filter(s => !s.isHidden && !s.isArchived), [students]);
+    const hiddenStudents = useMemo(() => students.filter(s => s.isHidden && !s.isArchived), [students]);
 
     const handleDelete = async () => {
         if (!teacher || !studentToDelete) return;
@@ -75,8 +75,8 @@ export default function DataManagementPage() {
 
             if (result.success) {
                 toast({
-                    title: 'Student Deleted',
-                    description: `${studentToDelete.studentName}'s account and all associated data have been permanently deleted.`,
+                    title: 'Deletion Initiated',
+                    description: `${studentToDelete.studentName}'s data has been cleared. Their login will be deleted on their next attempt.`,
                     duration: 8000,
                 });
             } else {
@@ -181,13 +181,13 @@ export default function DataManagementPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the account and all associated data for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong>. This action cannot be undone.
+                            This will permanently delete all data for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong> and their account will be deleted upon their next login attempt. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete'}
+                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete Data & Flag Account'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
