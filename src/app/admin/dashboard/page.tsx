@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -1292,7 +1291,7 @@ export default function AdminDashboardPage() {
                                 <AlertDialogTitle>Are you sure you want to delete this account?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                     This will permanently delete the account for{' '}
-                                    <strong>{userToDelete?.type === 'teacher' ? (userToDelete.data as Teacher).name : (userToDelete.data as Student).characterName}</strong>
+                                    <strong>{userToDelete && (userToDelete.type === 'teacher' ? (userToDelete.data as Teacher).name : (userToDelete.data as Student).characterName)}</strong>
                                     {' '}and all of their associated data. This action cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
@@ -1342,3 +1341,4 @@ export default function AdminDashboardPage() {
     );
 }
 
+    
