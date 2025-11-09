@@ -155,6 +155,7 @@ export default function InactiveAccountsPage() {
                     <TableHead>Email</TableHead>
                     <TableHead>Date Registered</TableHead>
                     <TableHead>Inactivity Criteria</TableHead>
+                    <TableHead>Teacher UID</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -170,6 +171,7 @@ export default function InactiveAccountsPage() {
                                 {t.inactivityReasons.map(reason => <li key={reason}>{reason}</li>)}
                             </ul>
                         </TableCell>
+                        <TableCell className="font-mono text-xs">{t.id}</TableCell>
                     </TableRow>
                 ))}
             </TableBody>
