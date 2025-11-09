@@ -74,11 +74,13 @@ export default function InactiveAccountsPage() {
                 const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'chapters'));
                 const boonsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'boons'));
                 
-                const isTeacherInactive = studentsSnapshot.empty &&
-                                          pendingStudentsSnapshot.empty &&
-                                          hubsSnapshot.empty &&
-                                          chaptersSnapshot.empty &&
-                                          boonsSnapshot.empty;
+                const hasOneOrFewerStudents = studentsSnapshot.size <= 1;
+                const hasNoPendingStudents = pendingStudentsSnapshot.empty;
+                const hasNoHubs = hubsSnapshot.empty;
+                const hasNoChapters = chaptersSnapshot.empty;
+                const hasNoBoons = boonsSnapshot.empty;
+                
+                const isTeacherInactive = hasOneOrFewerStudents && (hasNoPendingStudents || hasNoHubs || hasNoChapters || hasNoBoons);
                 
                 if (isTeacherInactive) {
                     foundInactiveTeachers.push({
