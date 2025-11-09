@@ -7,9 +7,17 @@ service cloud.firestore {
     function isStudentInClass(teacherId) {
       return get(/databases/$(database)/documents/students/$(request.auth.uid)).data.teacherUid == teacherId;
     }
+
+    function isAdmin() {
+      // Add the UIDs of all admins here
+      let adminUids = [
+        'idl6dc7GX1UWUf6FJcn2XdZ2Hpp2' 
+      ];
+      return request.auth.uid in adminUids;
+    }
   
     match /teachers/{teacherId} {
-      allow read, write: if request.auth.uid == teacherId;
+      allow read, write: if request.auth.uid == teacherId || isAdmin();
       
       // Students can only read the presence document of their own class
       match /presence/online {
@@ -18,24 +26,24 @@ service cloud.firestore {
       }
       
       match /students/{studentId} {
-        allow read: if isStudentInClass(teacherId);
-        allow write: if request.auth.uid == studentId; // Students can only write to their own document
+        allow read: if isStudentInClass(teacherId) || isAdmin();
+        allow write: if request.auth.uid == studentId || isAdmin(); // Students can only write to their own document
       }
       
       // Lock down all other subcollections by default for students
       match /{allOtherSubcollections}/{docId} {
-         allow read, write: if request.auth.uid == teacherId;
+         allow read, write: if request.auth.uid == teacherId || isAdmin();
       }
     }
 
     match /students/{studentId} {
-      allow read: if request.auth.uid == studentId;
-      allow write: if false; // Only backend can write here
+      allow read: if request.auth.uid == studentId || isAdmin();
+      allow write: if isAdmin(); // Only admins can write here now
     }
     
     // Deny all other collections by default
     match /{path=**}/(document) {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }

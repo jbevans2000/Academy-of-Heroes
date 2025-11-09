@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where, Timestamp, writeBatch } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -21,7 +20,6 @@ import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/ma
 import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
-import { deleteTeacher, deleteStudent } from '@/ai/flows/admin-actions';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power } from 'lucide-react';
 import {
   DropdownMenu,
@@ -186,6 +184,40 @@ export default function AdminDashboardPage() {
     
     const router = useRouter();
     const { toast } = useToast();
+
+    // Client-side data deletion functions
+    const deleteStudentData = async (teacherUid: string, studentUid: string) => {
+        const batch = writeBatch(db);
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const subcollections = ['messages', 'avatarLog'];
+        for (const sub of subcollections) {
+            const subRef = collection(studentRef, sub);
+            const snapshot = await getDocs(subRef);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        }
+        batch.delete(studentRef);
+        const globalStudentRef = doc(db, 'students', studentUid);
+        batch.delete(globalStudentRef);
+        await batch.commit();
+    };
+
+    const deleteTeacherData = async (teacherUid: string) => {
+        const batch = writeBatch(db);
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const subcollections = [
+            'students', 'pendingStudents', 'questHubs', 'chapters', 'bossBattles',
+            'savedBattles', 'groupBattleSummaries', 'boons', 'pendingBoonRequests',
+            'boonTransactions', 'gameLog', 'wheelOfFateEvents', 'duelQuestionSections',
+            'companies', 'missions', 'guildHallMessages'
+        ];
+        for (const sub of subcollections) {
+            const subRef = collection(teacherRef, sub);
+            const snapshot = await getDocs(subRef);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        }
+        batch.delete(teacherRef);
+        await batch.commit();
+    };
 
     const fetchTeacherData = useCallback(async () => {
         const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
@@ -686,21 +718,15 @@ export default function AdminDashboardPage() {
     const handleDeleteUser = async () => {
         if (!userToDelete) return;
         setIsDeletingUser(true);
-        
         try {
-            let result;
             if (userToDelete.type === 'teacher') {
-                result = await deleteTeacher(userToDelete.data.id!);
+                await deleteTeacherData(userToDelete.data.id!);
+                toast({ title: 'Teacher Data Deleted', description: "The teacher's Firestore data has been removed. Their login account remains." });
             } else {
-                result = await deleteStudent({ teacherUid: (userToDelete.data as Student).teacherId, studentUid: userToDelete.data.uid });
+                await deleteStudentData((userToDelete.data as Student).teacherId, userToDelete.data.uid);
+                toast({ title: 'Student Data Deleted', description: "The student's Firestore data has been removed. Their login account remains." });
             }
-
-            if (result.success) {
-                toast({ title: `${userToDelete.type === 'teacher' ? 'Teacher' : 'Student'} Deleted`, description: result.message });
-                handleRefreshData();
-            } else {
-                throw new Error(result.error);
-            }
+            await handleRefreshData(); // Refresh all data after deletion
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
         } finally {
@@ -1288,17 +1314,17 @@ export default function AdminDashboardPage() {
                     <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to delete this account?</AlertDialogTitle>
+                                <AlertDialogTitle>Delete Firestore Data?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will permanently delete the account for{' '}
-                                    <strong>{userToDelete && (userToDelete.type === 'teacher' ? (userToDelete.data as Teacher).name : (userToDelete.data as Student).characterName)}</strong>
-                                    {' '}and all of their associated data. This action cannot be undone.
+                                    This will permanently delete all Firestore game data for{' '}
+                                    <strong>{userToDelete && (userToDelete.type === 'teacher' ? (userToDelete.data as Teacher).name : (userToDelete.data as Student).characterName)}</strong>.
+                                    Their login account will remain, but they will be removed from the game. This cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel disabled={isDeletingUser}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleDeleteUser} disabled={isDeletingUser} className="bg-destructive hover:bg-destructive/90">
-                                    {isDeletingUser ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Delete Permanently'}
+                                    {isDeletingUser ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Delete Data Only'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -1340,5 +1366,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
-    
