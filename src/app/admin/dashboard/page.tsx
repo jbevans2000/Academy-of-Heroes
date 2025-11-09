@@ -18,8 +18,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
-import { moderateStudent } from '@/ai/flows/manage-student';
-import { deleteTeacher } from '@/ai/flows/manage-teacher';
 import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/manage-admin-notepad';
 import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
@@ -166,19 +164,6 @@ export default function AdminDashboardPage() {
     // Sorting state
     const [teacherSortConfig, setTeacherSortConfig] = useState<{ key: TeacherSortKey; direction: SortDirection } | null>({ key: 'className', direction: 'asc' });
     const [studentSortConfig, setStudentSortConfig] = useState<{ key: StudentSortKey; direction: SortDirection } | null>({ key: 'studentName', direction: 'asc' });
-
-    // State for deleting students
-    const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
-    const [isDeletingStudent, setIsDeletingStudent] = useState(false);
-    
-    // State for deleting teachers
-    const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
-    const [isDeletingTeacher, setIsDeletingTeacher] = useState(false);
-
-    // State for Phase Zero Permissions Verifier
-    const [testFile, setTestFile] = useState<File | null>(null);
-    const [fetchStatus, setFetchStatus] = useState<{ok: boolean, status: number} | null>(null);
-    const [isTesting, setIsTesting] = useState(false);
 
     // Message Center State
     const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
@@ -694,48 +679,6 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const handleDeleteStudent = async () => {
-        if (!studentToDelete) return;
-        setIsDeletingStudent(true);
-        try {
-            const result = await moderateStudent({
-                teacherUid: studentToDelete.teacherId,
-                studentUid: studentToDelete.uid,
-                action: 'delete'
-            });
-            if (result.success) {
-                toast({ title: "Student Deleted", description: `${studentToDelete.characterName} has been removed from the system.`});
-                setAllStudents(prev => prev.filter(s => s.uid !== studentToDelete.uid));
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message || 'Could not delete the student.' });
-        } finally {
-            setIsDeletingStudent(false);
-            setStudentToDelete(null);
-        }
-    }
-    
-    const handleDeleteTeacher = async () => {
-        if (!teacherToDelete) return;
-        setIsDeletingTeacher(true);
-        try {
-            const result = await deleteTeacher(teacherToDelete.id);
-            if (result.success) {
-                 toast({ title: "Teacher Deleted", description: `${teacherToDelete.name}'s guild has been removed from the system.`});
-                 handleRefreshData();
-            } else {
-                 throw new Error(result.error);
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message || 'Could not delete the teacher.' });
-        } finally {
-            setIsDeletingTeacher(false);
-            setTeacherToDelete(null);
-        }
-    }
-
     const handleOpenMessageCenter = (teacherId?: string) => {
         const teacher = teacherId ? sortedTeachers.find(t => t.id === teacherId) : null;
         setInitialTeacherToView(teacher || null);
@@ -1084,7 +1027,6 @@ export default function AdminDashboardPage() {
                                                     {columnVisibility.school && <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
                                                     {columnVisibility.studentCount && <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
                                                     {columnVisibility.createdAt && <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
-                                                    <TableHead className="text-right">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -1102,11 +1044,6 @@ export default function AdminDashboardPage() {
                                                         {columnVisibility.school && <TableCell>{teacher.schoolName}</TableCell>}
                                                         {columnVisibility.studentCount && <TableCell>{teacher.studentCount}</TableCell>}
                                                         {columnVisibility.createdAt && <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>}
-                                                        <TableCell className="text-right">
-                                                            <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -1152,7 +1089,6 @@ export default function AdminDashboardPage() {
                                                                     <TableHead>Login Alias</TableHead>
                                                                     <TableHead>Date Created</TableHead>
                                                                     <TableHead>Last Login</TableHead>
-                                                                    <TableHead className="text-right">Actions</TableHead>
                                                                 </TableRow>
                                                             </TableHeader>
                                                             <TableBody>
@@ -1163,11 +1099,6 @@ export default function AdminDashboardPage() {
                                                                         <TableCell className="font-mono">{student.studentId}</TableCell>
                                                                         <TableCell>{student.createdAt ? format(student.createdAt, 'PP') : 'N/A'}</TableCell>
                                                                         <TableCell>{student.lastLogin ? format(student.lastLogin, 'PPp') : 'Never'}</TableCell>
-                                                                        <TableCell className="text-right">
-                                                                            <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
-                                                                                <Trash2 className="h-4 w-4" />
-                                                                            </Button>
-                                                                        </TableCell>
                                                                     </TableRow>
                                                                 ))}
                                                             </TableBody>
@@ -1328,38 +1259,6 @@ export default function AdminDashboardPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    <AlertDialog open={!!studentToDelete} onOpenChange={(isOpen) => !isOpen && setStudentToDelete(null)}>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Student: {studentToDelete?.characterName}?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This will permanently delete the student's account and all their character data. This action is irreversible.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel disabled={isDeletingStudent}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteStudent} disabled={isDeletingStudent} className="bg-destructive hover:bg-destructive/90">
-                                    {isDeletingStudent ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete'}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                     <AlertDialog open={!!teacherToDelete} onOpenChange={(isOpen) => !isOpen && setTeacherToDelete(null)}>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Teacher: {teacherToDelete?.name}?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This will permanently delete the teacher's account and ALL associated data, including all their students, quests, and battles. This action is irreversible and cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel disabled={isDeletingTeacher}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteTeacher} disabled={isDeletingTeacher} className="bg-destructive hover:bg-destructive/90">
-                                    {isDeletingTeacher ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete Teacher'}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
                     <AlertDialog open={!!broadcastToDelete} onOpenChange={(isOpen) => !isOpen && setBroadcastToDelete(null)}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -1381,3 +1280,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
