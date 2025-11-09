@@ -3,8 +3,7 @@
 /**
  * @fileOverview A secure, server-side flow for admin-only actions like deleting users.
  */
-import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebaseAdmin';
 
 interface ActionResponse {
   success: boolean;
@@ -87,7 +86,7 @@ export async function deleteStudentData({ teacherUid, studentUid }: DeleteStuden
     try {
         // First, ARCHIVE the student document. This keeps it queryable for the second step.
         const studentRef = adminDb.doc(`teachers/${teacherUid}/students/${studentUid}`);
-        await updateDoc(studentRef, { isArchived: true });
+        await studentRef.update({ isArchived: true });
 
         // Delete all subcollections to clear out most data.
         const subcollections = ['messages', 'avatarLog'];
@@ -106,3 +105,4 @@ export async function deleteStudentData({ teacherUid, studentUid }: DeleteStuden
         return { success: false, error: error.message || 'An unknown error occurred while archiving the student data.' };
     }
 }
+
