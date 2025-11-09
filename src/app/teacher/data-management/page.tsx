@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -6,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, Loader2, DatabaseZap, ArchiveRestore, EyeOff, Eye } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2, DatabaseZap, ArchiveRestore, EyeOff, Eye, UserX, AlertCircle } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
@@ -40,6 +39,7 @@ export default function DataManagementPage() {
     const [studentToAction, setStudentToAction] = useState<Student | null>(null);
     const [isDataDeleteDialogOpen, setIsDataDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isFlagging, setIsFlagging] = useState(false);
     
 
     useEffect(() => {
@@ -80,12 +80,10 @@ export default function DataManagementPage() {
 
             if (result.success) {
                 toast({
-                    title: 'Student Data Deleted',
+                    title: 'Student Data Deleted & Archived',
                     description: `${studentToAction.studentName}'s classroom data has been permanently removed.`,
                     duration: 6000,
                 });
-                // Optimistically remove from UI
-                setStudents(prev => prev.filter(s => s.uid !== studentToAction.uid));
             } else {
                 throw new Error(result.error || 'An unknown error occurred during data deletion.');
             }
@@ -103,6 +101,25 @@ export default function DataManagementPage() {
         }
     };
     
+    const handleFlagForDeletion = async (student: Student) => {
+        if (!teacher) return;
+        setIsFlagging(true);
+        try {
+            const result = await initiateStudentDeletion({ teacherUid: teacher.uid, studentUid: student.uid });
+            if (result.success) {
+                toast({ title: 'Account Flagged', description: `${student.studentName}'s account will be permanently deleted on their next login.`});
+                // Optimistically remove from UI
+                setStudents(prev => prev.filter(s => s.uid !== student.uid));
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsFlagging(false);
+        }
+    };
+    
     const handleToggleVisibility = async (student: Student, isHidden: boolean) => {
         if (!teacher) return;
         try {
@@ -115,7 +132,6 @@ export default function DataManagementPage() {
     }
     
     const handleUnarchive = async (student: Student) => {
-        // This function is kept for safety but the UI path to it is removed.
         if (!teacher) return;
         try {
             const result = await unarchiveStudent({ teacherUid: teacher.uid, studentUid: student.uid });
@@ -130,7 +146,7 @@ export default function DataManagementPage() {
     }
 
 
-    const renderStudentTable = (studentList: Student[], type: 'active' | 'hidden') => {
+    const renderStudentTable = (studentList: Student[], type: 'active' | 'hidden' | 'archived') => {
         if (studentList.length === 0) {
             return <p className="text-center text-muted-foreground p-8">No students in this category.</p>;
         }
@@ -165,7 +181,7 @@ export default function DataManagementPage() {
                                         size="sm"
                                         onClick={() => { setStudentToAction(student); setIsDataDeleteDialogOpen(true); }}
                                     >
-                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Data
+                                        <Trash2 className="mr-2 h-4 w-4" /> Archive Data
                                     </Button>
                                    </>
                                )}
@@ -177,6 +193,26 @@ export default function DataManagementPage() {
                                     >
                                         <Eye className="mr-2 h-4 w-4" /> Unhide
                                     </Button>
+                               )}
+                               {type === 'archived' && (
+                                   <>
+                                     <Button 
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => handleUnarchive(student)}
+                                    >
+                                        <ArchiveRestore className="mr-2 h-4 w-4" /> Unarchive
+                                    </Button>
+                                    <Button 
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => handleFlagForDeletion(student)}
+                                        disabled={isFlagging}
+                                    >
+                                        {isFlagging ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserX className="mr-2 h-4 w-4" />}
+                                         Delete Account
+                                    </Button>
+                                   </>
                                )}
                             </TableCell>
                         </TableRow>
@@ -192,15 +228,15 @@ export default function DataManagementPage() {
                 <TeacherHeader />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <div className="w-full max-w-4xl mx-auto space-y-6">
-                        <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+                        <Button variant="outline" onClick={() => router.push('/teacher/tools')}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Podium
+                            Back to All Tools
                         </Button>
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><DatabaseZap /> Data Management</CardTitle>
                                 <CardDescription>
-                                    Use this tool to permanently delete a student's classroom data. This action cannot be undone. Hiding a student only removes them from view on the main dashboard.
+                                    Use this tool to archive a student's data or permanently delete their login account. Archiving removes them from the main dashboard but preserves their data. Deleting their account is permanent.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -212,15 +248,19 @@ export default function DataManagementPage() {
                                     </div>
                                 ) : (
                                     <Tabs defaultValue="active">
-                                        <TabsList className="grid w-full grid-cols-2">
+                                        <TabsList className="grid w-full grid-cols-3">
                                             <TabsTrigger value="active">Active ({activeStudents.length})</TabsTrigger>
                                             <TabsTrigger value="hidden">Hidden ({hiddenStudents.length})</TabsTrigger>
+                                            <TabsTrigger value="archived">Archived ({archivedStudents.length})</TabsTrigger>
                                         </TabsList>
                                         <TabsContent value="active">
                                             {renderStudentTable(activeStudents, 'active')}
                                         </TabsContent>
                                         <TabsContent value="hidden">
                                             {renderStudentTable(hiddenStudents, 'hidden')}
+                                        </TabsContent>
+                                        <TabsContent value="archived">
+                                            {renderStudentTable(archivedStudents, 'archived')}
                                         </TabsContent>
                                     </Tabs>
                                 )}
@@ -233,15 +273,15 @@ export default function DataManagementPage() {
             <AlertDialog open={isDataDeleteDialogOpen} onOpenChange={setIsDataDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Data for {studentToAction?.characterName}?</AlertDialogTitle>
+                        <AlertDialogTitle>Archive Data for {studentToAction?.characterName}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                           This will permanently delete all of this student's classroom data (progress, inventory, etc.) and remove them from your dashboard. Their login account will remain, but it will be unusable. This is the first step in permanent account deletion. This action cannot be undone.
+                           This will archive all of this student's classroom data (progress, inventory, etc.) and move them to the "Archived" tab. Their login account will remain, but they will not appear on your main dashboard.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteStudentData} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete All Data'}
+                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Archive Data'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -249,3 +289,5 @@ export default function DataManagementPage() {
         </>
     );
 }
+
+    

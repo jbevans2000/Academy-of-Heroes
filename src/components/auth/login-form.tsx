@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -11,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
@@ -126,6 +125,9 @@ export function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const user = userCredential.user;
 
+      const deletionFlagRef = doc(db, 'deleted-users', user.uid);
+      const deletionFlagSnap = await getDoc(deletionFlagRef);
+
       const studentMetaRef = doc(db, 'students', user.uid);
       const studentMetaSnap = await getDoc(studentMetaRef);
       
@@ -151,6 +153,19 @@ export function LoginForm() {
       
       if (!teacherUid) {
          throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
+      }
+
+      // Check for deletion flag AFTER finding the teacher
+      if (deletionFlagSnap.exists()) {
+          await user.delete(); // Delete Auth user
+          await deleteDoc(deletionFlagRef); // Clean up the flag
+          await signOut(auth);
+          toast({
+              title: 'Account Deleted',
+              description: 'This account has been successfully deleted as requested by the Guild Leader.',
+              duration: 8000,
+          });
+          return; // Stop the login process
       }
 
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
@@ -249,3 +264,5 @@ export function LoginForm() {
     </div>
   );
 }
+
+    
