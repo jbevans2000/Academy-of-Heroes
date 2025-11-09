@@ -53,19 +53,16 @@ export default function InactiveAccountsPage() {
                 const reasons: string[] = [];
 
                 const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'students'));
-                const pendingStudentsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'pendingStudents'));
                 const hubsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'questHubs'));
                 const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'chapters'));
                 const boonsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'boons'));
                 
                 const hasOneOrFewerStudents = studentsSnapshot.size <= 1;
-                const hasNoPendingStudents = pendingStudentsSnapshot.empty;
                 const hasNoCreatedHubs = hubsSnapshot.empty || (hubsSnapshot.size === 1 && hubsSnapshot.docs[0].data().name === 'Independent Chapters');
                 const hasNoChapters = chaptersSnapshot.empty;
                 const hasNoBoons = boonsSnapshot.empty;
                 
                 if (hasOneOrFewerStudents) reasons.push('1 or fewer students');
-                if (hasNoPendingStudents) reasons.push('No pending students');
                 if (hasNoCreatedHubs) reasons.push('No custom Quest Hubs');
                 if (hasNoChapters) reasons.push('No Chapters');
                 if (hasNoBoons) reasons.push('No custom rewards');
