@@ -15,15 +15,6 @@ if (!app) {
     process.env.GCLOUD_PROJECT ||
     process.env.FIREBASE_PROJECT_ID;
 
-  if (process.env.FIREBASE_ADMIN_SA_JSON) {
-    const sa = JSON.parse(process.env.FIREBASE_ADMIN_SA_JSON);
-    app = getApps().length
-      ? getApp()
-      : initializeApp({
-          credential: cert(sa),
-          projectId, // <<— pin
-        });
-  } else {
     app = getApps().length
       ? getApp()
       : initializeApp({
@@ -33,7 +24,7 @@ if (!app) {
   }
 
   globalForAdmin.__ADMIN_APP__ = app;
-}
+
 
 export const adminApp = app!;
 export const adminAuth = getAuth(adminApp);
