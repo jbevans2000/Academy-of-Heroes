@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, Loader2, DatabaseZap, ArchiveRestore, EyeOff } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2, DatabaseZap, ArchiveRestore, EyeOff, Eye } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
@@ -22,10 +22,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { deleteStudentData } from '@/ai/flows/admin-actions';
+import { archiveStudentForDeletion } from '@/ai/flows/admin-actions';
 import { initiateStudentDeletion, unarchiveStudent, toggleStudentVisibility } from '@/ai/flows/manage-student';
 
 
@@ -43,7 +43,7 @@ export default function DataManagementPage() {
     const [isFlagConfirmOpen, setIsFlagConfirmOpen] = useState(false);
 
     // Loading states
-    const [isDeletingData, setIsDeletingData] = useState(false);
+    const [isArchiving, setIsArchiving] = useState(false);
     const [isFlagging, setIsFlagging] = useState(false);
     const [isUnarchiving, setIsUnarchiving] = useState<string | null>(null);
 
@@ -73,19 +73,19 @@ export default function DataManagementPage() {
     const hiddenStudents = useMemo(() => students.filter(s => !s.isArchived && s.isHidden), [students]);
     const archivedStudents = useMemo(() => students.filter(s => s.isArchived), [students]);
 
-    const handleDeleteData = async () => {
+    const handleArchiveStudent = async () => {
         if (!teacher || !studentToAction) return;
-        setIsDeletingData(true);
+        setIsArchiving(true);
         
         try {
-            const result = await deleteStudentData({
+            const result = await archiveStudentForDeletion({
                 teacherUid: teacher.uid,
                 studentUid: studentToAction.uid
             });
 
             if (result.success) {
                 toast({
-                    title: 'Data Archived',
+                    title: 'Student Archived',
                     description: `${studentToAction.studentName}'s classroom data has been archived. You can now flag their login for permanent deletion from the 'Archived' tab.`,
                     duration: 6000,
                 });
@@ -93,14 +93,14 @@ export default function DataManagementPage() {
                 throw new Error(result.error || 'An unknown error occurred during data archiving.');
             }
         } catch (error: any) {
-            console.error("Error deleting student data:", error);
+            console.error("Error archiving student data:", error);
             toast({
                 variant: 'destructive',
-                title: 'Deletion Failed',
+                title: 'Archiving Failed',
                 description: error.message,
             });
         } finally {
-            setIsDeletingData(false);
+            setIsArchiving(false);
             setIsDataDeleteDialogOpen(false);
             setStudentToAction(null);
         }
@@ -145,7 +145,7 @@ export default function DataManagementPage() {
             if (result.success) {
                  toast({
                     title: 'Account Flagged for Deletion',
-                    description: `${studentToAction.studentName}'s login will be deleted on their next attempt. The student record is now fully removed.`,
+                    description: `${studentToAction.studentName}'s login will be deleted on their next attempt. Their data will be fully removed from the system.`,
                     duration: 8000,
                 });
             } else {
@@ -200,7 +200,7 @@ export default function DataManagementPage() {
                                         size="sm"
                                         onClick={() => { setStudentToAction(student); setIsDataDeleteDialogOpen(true); }}
                                     >
-                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Data
+                                        <Trash2 className="mr-2 h-4 w-4" /> Archive Data
                                     </Button>
                                    </>
                                )}
@@ -210,7 +210,7 @@ export default function DataManagementPage() {
                                         size="sm"
                                         onClick={() => handleToggleVisibility(student, false)}
                                     >
-                                        <EyeOff className="mr-2 h-4 w-4" /> Unhide
+                                        <Eye className="mr-2 h-4 w-4" /> Unhide
                                     </Button>
                                )}
                                {type === 'archived' && (
@@ -298,9 +298,9 @@ export default function DataManagementPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeletingData}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteData} disabled={isDeletingData} className="bg-destructive hover:bg-destructive/90">
-                            {isDeletingData ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Archive Data'}
+                        <AlertDialogCancel disabled={isArchiving}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleArchiveStudent} disabled={isArchiving} className="bg-destructive hover:bg-destructive/90">
+                            {isArchiving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Archive Data'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

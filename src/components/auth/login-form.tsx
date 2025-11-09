@@ -11,9 +11,40 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import Link from 'next/link';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
+
+// This is a client-side utility function to perform full data deletion
+async function deleteStudentDataAndAccount(teacherUid: string, studentUid: string) {
+    const batch = writeBatch(db);
+
+    // 1. Delete all subcollections
+    const subcollections = ['messages', 'avatarLog'];
+    for (const sub of subcollections) {
+        const subRef = collection(db, `teachers/${teacherUid}/students/${studentUid}/${sub}`);
+        const snapshot = await getDocs(subRef);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    }
+    
+    // 2. Delete the main student document
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+    batch.delete(studentRef);
+
+    // 3. Delete the global lookup document
+    const globalStudentRef = doc(db, 'students', studentUid);
+    batch.delete(globalStudentRef);
+
+    // Commit all Firestore deletions
+    await batch.commit();
+
+    // 4. Finally, delete the auth user
+    const user = auth.currentUser;
+    if (user && user.uid === studentUid) {
+        await user.delete();
+    }
+}
+
 
 export function LoginForm() {
   const [loginId, setLoginId] = useState('');
@@ -95,31 +126,8 @@ export function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const user = userCredential.user;
 
-      // Check for deletion flag
-      const deletedUserRef = doc(db, 'deleted-users', user.uid);
-      const deletedUserSnap = await getDoc(deletedUserRef);
-      if (deletedUserSnap.exists() && deletedUserSnap.data().deletionRequested) {
-          await user.delete();
-          await deleteDoc(deletedUserRef);
-          toast({
-              title: 'Account Deleted',
-              description: 'This account has been successfully deleted as requested by the Guild Leader.',
-              duration: 8000,
-          });
-          await signOut(auth);
-          return;
-      }
-
-      // POST-LOGIN MAINTENANCE CHECK
-      const settings = await getGlobalSettings();
-      // Always allow the master admin to log in
-      if (settings.isMaintenanceModeOn && user.uid !== 'idl6dc7GX1UWUf6FJcn2XdZ2Hpp2' && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
-          await signOut(auth); // Sign out the non-whitelisted user
-          throw new Error('MAINTENANCE_MODE'); // Throw specific error to be caught by the outer handler
-      }
-
       const studentMetaRef = doc(db, 'students', user.uid);
-      let studentMetaSnap = await getDoc(studentMetaRef);
+      const studentMetaSnap = await getDoc(studentMetaRef);
       
       let teacherUid = '';
       let isApproved = false;
@@ -128,23 +136,19 @@ export function LoginForm() {
         teacherUid = studentMetaSnap.data().teacherUid;
         isApproved = studentMetaSnap.data().approved;
       } else {
-        // Even if the meta doc is gone, the teacher might still have the student record.
-        // This is a recovery mechanism.
-        // We'll have to query all teachers to find the student. This is slow but necessary for recovery.
-        const teachersSnapshot = await getDoc(collection(db, 'teachers'));
+        const teachersSnapshot = await getDocs(collection(db, 'teachers'));
         for (const teacherDoc of teachersSnapshot.docs) {
             const studentRef = doc(teacherDoc.ref, 'students', user.uid);
             const studentSnap = await getDoc(studentRef);
             if (studentSnap.exists()) {
                 teacherUid = teacherDoc.id;
-                // Re-create the meta document
                 await setDoc(studentMetaRef, { teacherUid, approved: studentSnap.data().isArchived ? false : true });
                 isApproved = studentSnap.data().isArchived ? false : true;
                 break;
             }
         }
       }
-
+      
       if (!teacherUid) {
          throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
       }
@@ -154,9 +158,21 @@ export function LoginForm() {
           const studentData = studentSnap.data();
 
           if (studentData.isArchived) {
+            await deleteStudentDataAndAccount(teacherUid, user.uid);
             await signOut(auth);
-            router.push('/account-archived');
+            toast({
+                title: 'Account Deleted',
+                description: 'This account has been successfully deleted as requested by the Guild Leader.',
+                duration: 8000,
+            });
             return;
+          }
+
+          if (studentData.forceLogout) {
+              await updateDoc(doc(db, 'teachers', teacherUid, 'students', user.uid), { forceLogout: false });
+              await signOut(auth);
+              toast({ title: "Session Expired", description: "Your Guild Leader has ended your session. Please log in again." });
+              return;
           }
 
           if (!isApproved) {

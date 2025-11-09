@@ -3,6 +3,8 @@
 /**
  * @fileOverview A secure, server-side flow for admin-only actions like deleting users.
  */
+import { doc, writeBatch } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { adminDb } from '@/lib/firebaseAdmin';
 
 interface ActionResponse {
@@ -11,42 +13,15 @@ interface ActionResponse {
   error?: string;
 }
 
-// Helper function to recursively delete subcollections.
-async function deleteCollection(collectionPath: string, batchSize: number = 100) {
-    const collectionRef = adminDb.collection(collectionPath);
-    const query = collectionRef.limit(batchSize);
-
-    return new Promise((resolve, reject) => {
-        deleteQueryBatch(query, resolve).catch(reject);
-    });
-}
-
-async function deleteQueryBatch(query: FirebaseFirestore.Query, resolve: (value: unknown) => void) {
-    const snapshot = await query.get();
-
-    if (snapshot.size === 0) {
-        return resolve(0);
-    }
-
-    const batch = adminDb.batch();
-    snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
-
-    process.nextTick(() => {
-        deleteQueryBatch(query, resolve);
-    });
-}
-
-
+// This function uses the Admin SDK and is intended for a secure server environment.
+// It will attempt to delete the auth user and their firestore data.
 export async function deleteTeacher(teacherUid: string): Promise<ActionResponse> {
     if (!teacherUid) {
         return { success: false, error: "Teacher UID is required." };
     }
 
     try {
-        // First, delete all Firestore data associated with the teacher.
+        const batch = writeBatch(db);
         const subcollections = [
             'students', 'pendingStudents', 'questHubs', 'chapters', 'bossBattles',
             'savedBattles', 'groupBattleSummaries', 'boons', 'pendingBoonRequests',
@@ -55,13 +30,15 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
         ];
         
         for (const subcollection of subcollections) {
-            await deleteCollection(`teachers/${teacherUid}/${subcollection}`);
+            const subcollectionRef = collection(db, `teachers/${teacherUid}/${subcollection}`);
+            const snapshot = await getDocs(subcollectionRef);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
         }
         
-        // Then, delete the main teacher document.
-        await adminDb.collection('teachers').doc(teacherUid).delete();
+        batch.delete(doc(db, 'teachers', teacherUid));
         
-        // Flag for auth deletion on next login
+        await batch.commit();
+        
         await adminDb.collection('deleted-users').doc(teacherUid).set({ deletionRequested: true });
 
         return { success: true, message: "Teacher data has been deleted. Their login account will be removed upon their next login attempt." };
@@ -72,37 +49,26 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
 }
 
 
-interface DeleteStudentInput {
+interface ArchiveStudentInput {
     teacherUid: string;
     studentUid: string;
 }
 
-// Renamed from deleteStudent to be more specific
-export async function deleteStudentData({ teacherUid, studentUid }: DeleteStudentInput): Promise<ActionResponse> {
+// This function ARCHIVES the student document, marking it for full deletion
+// by the student on their next login. This is a client-side compatible action.
+export async function archiveStudentForDeletion({ teacherUid, studentUid }: ArchiveStudentInput): Promise<ActionResponse> {
      if (!teacherUid || !studentUid) {
         return { success: false, error: "Teacher and Student UIDs are required." };
     }
     
     try {
-        // First, ARCHIVE the student document. This keeps it queryable for the second step.
-        const studentRef = adminDb.doc(`teachers/${teacherUid}/students/${studentUid}`);
-        await studentRef.update({ isArchived: true });
-
-        // Delete all subcollections to clear out most data.
-        const subcollections = ['messages', 'avatarLog'];
-        for (const subcollection of subcollections) {
-            await deleteCollection(`teachers/${teacherUid}/students/${studentUid}/${subcollection}`);
-        }
+        const studentRef = doc(db, `teachers/${teacherUid}/students/${studentUid}`);
+        await updateDoc(studentRef, { isArchived: true });
         
-        // Now, we could delete the main doc, but archiving is better for a 2-step process.
-        // If you truly want to delete, you'd uncomment this line, but then you can't see it for step 2.
-        // await studentRef.delete();
-        
-        return { success: true, message: "Student data has been archived. You can now flag their account for final deletion." };
+        return { success: true, message: "Student has been archived. Their data and account will be permanently deleted upon their next login attempt." };
 
     } catch (error: any) {
         console.error("Error archiving student data:", error);
         return { success: false, error: error.message || 'An unknown error occurred while archiving the student data.' };
     }
 }
-
