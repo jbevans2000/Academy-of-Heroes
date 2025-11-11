@@ -40,6 +40,7 @@ const nextConfig = {
   },
   env: {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
   },
   async headers() {
     return [
