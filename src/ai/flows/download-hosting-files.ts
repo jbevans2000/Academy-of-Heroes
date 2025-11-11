@@ -6,11 +6,28 @@
  * zip them, upload to Cloud Storage, and return a downloadable URL.
  */
 
-import { adminDb } from '@/lib/firebaseAdmin';
+import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { google } from 'googleapis';
 import * as archiver from 'archiver';
 import { PassThrough } from 'stream';
+
+const PROJECT_ID = "academy-heroes-mziuf";
+const BUCKET_NAME = `${PROJECT_ID}.appspot.com`;
+
+// Self-contained Firebase Admin initialization for this specific flow
+function getFlowAdminApp(): App {
+    const aohAdminApp = getApps().find(app => app.name === 'flow-admin-app');
+    if (aohAdminApp) {
+        return aohAdminApp;
+    }
+    
+    // In App Hosting, the SDK automatically uses the provisioned service account.
+    return initializeApp({
+        storageBucket: BUCKET_NAME,
+    }, 'flow-admin-app');
+}
+
 
 interface ActionResponse {
   success: boolean;
@@ -33,8 +50,7 @@ async function getAccessToken() {
 }
 
 export async function downloadAndZipHostingFiles(): Promise<ActionResponse> {
-  const projectId = "academy-heroes-mziuf";
-  if (!projectId) {
+  if (!PROJECT_ID) {
     return { success: false, error: 'Google Cloud Project ID is not configured.' };
   }
 
@@ -43,13 +59,14 @@ export async function downloadAndZipHostingFiles(): Promise<ActionResponse> {
     const headers = { Authorization: `Bearer ${accessToken}` };
 
     // 1. Find the hosting site ID
-    const sitesUri = `https://firebasehosting.googleapis.com/v1beta1/projects/${projectId}/sites`;
+    const sitesUri = `https://firebasehosting.googleapis.com/v1beta1/projects/${PROJECT_ID}/sites`;
     const sitesResponse = await fetch(sitesUri, { headers });
     if (!sitesResponse.ok) throw new Error(`Failed to list sites: ${await sitesResponse.text()}`);
     const sites = await sitesResponse.json();
     if (!sites.sites || sites.sites.length === 0) throw new Error('No Hosting sites found.');
+    
     const site = sites.sites[0];
-    const siteName = site.name; // Use the full name, e.g., "projects/projectId/sites/siteId"
+    const siteName = site.name; 
     const siteId = siteName.split('/').pop();
 
     // 2. Get the latest version name
@@ -98,8 +115,9 @@ export async function downloadAndZipHostingFiles(): Promise<ActionResponse> {
     archive.finalize();
 
     // 5. Upload the zip to Cloud Storage
-    const storage = getStorage(adminDb.app);
-    const bucket = storage.bucket(`${projectId}.appspot.com`);
+    const adminApp = getFlowAdminApp();
+    const storage = getStorage(adminApp);
+    const bucket = storage.bucket(BUCKET_NAME);
     const dateStamp = new Date().toISOString().split('T')[0];
     const fileName = `hosting-backups/hosting-files-${dateStamp}.zip`;
     const fileUpload = bucket.file(fileName);
