@@ -21,7 +21,8 @@ import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/ma
 import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power, Users } from 'lucide-react';
+import { downloadAndZipHostingFiles } from '@/ai/flows/download-hosting-files';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power, Users, Archive } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -182,6 +183,9 @@ export default function AdminDashboardPage() {
         studentCount: true,
         createdAt: true,
     });
+    
+    // Hosting Backup State
+    const [isBackingUp, setIsBackingUp] = useState(false);
     
     const router = useRouter();
     const { toast } = useToast();
@@ -761,6 +765,30 @@ export default function AdminDashboardPage() {
         }
     };
     
+    const handleDownloadBackup = async () => {
+        setIsBackingUp(true);
+        toast({ title: 'Backup Started', description: 'Generating and downloading hosting files. This may take a moment...' });
+        try {
+            const result = await downloadAndZipHostingFiles();
+            if (result.success && result.downloadUrl) {
+                toast({ title: 'Backup Ready!', description: 'Your download will begin shortly.' });
+                // Trigger download
+                const a = document.createElement('a');
+                a.href = result.downloadUrl;
+                a.download = `hosting-files-${new Date().toISOString().split('T')[0]}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                throw new Error(result.error || 'Failed to create backup.');
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Backup Failed', description: error.message });
+        } finally {
+            setIsBackingUp(false);
+        }
+    };
+    
     const hasUnreadMessages = useMemo(() => teachers.some(t => t.hasUnreadAdminMessages), [teachers]);
 
 
@@ -1249,6 +1277,10 @@ export default function AdminDashboardPage() {
                                 <Link href="/admin/tools/inactive-accounts">
                                     <Users className="mr-2 h-4 w-4" /> Inactive Account Explorer
                                 </Link>
+                            </Button>
+                            <Button onClick={handleDownloadBackup} disabled={isBackingUp} className="w-full justify-start">
+                                {isBackingUp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
+                                Download Hosting Files
                             </Button>
                         </CardContent>
                     </Card>

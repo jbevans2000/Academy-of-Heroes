@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -62,6 +61,7 @@ export default function InactiveAccountsPage() {
                 
                 const studentCount = studentsSnapshot.size;
                 const hasOneOrFewerStudents = studentCount <= 1;
+                // A teacher starts with one default hub, so we check if there are more than 1, or if the single one is not the default.
                 const hasNoCreatedHubs = hubsSnapshot.empty || (hubsSnapshot.size === 1 && hubsSnapshot.docs[0].data().name === 'Independent Chapters');
                 const hasNoChapters = chaptersSnapshot.empty;
                 const hasNoBoons = boonsSnapshot.empty;
@@ -71,6 +71,7 @@ export default function InactiveAccountsPage() {
                 if (hasNoChapters) reasons.push('No Chapters');
                 if (hasNoBoons) reasons.push('No custom rewards');
                 
+                // A teacher is inactive if they meet ANY of the criteria.
                 if (reasons.length > 0) {
                      foundInactiveTeachers.push({
                         id: teacherId,
