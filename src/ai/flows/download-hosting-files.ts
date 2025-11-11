@@ -48,10 +48,12 @@ export async function downloadAndZipHostingFiles(): Promise<ActionResponse> {
     if (!sitesResponse.ok) throw new Error(`Failed to list sites: ${await sitesResponse.text()}`);
     const sites = await sitesResponse.json();
     if (!sites.sites || sites.sites.length === 0) throw new Error('No Hosting sites found.');
-    const siteId = sites.sites[0].siteId;
+    const site = sites.sites[0];
+    const siteName = site.name; // Use the full name, e.g., "projects/projectId/sites/siteId"
+    const siteId = siteName.split('/').pop();
 
     // 2. Get the latest version name
-    const releasesUri = `https://firebasehosting.googleapis.com/v1beta1/sites/${siteId}/releases?pageSize=1`;
+    const releasesUri = `https://firebasehosting.googleapis.com/v1beta1/${siteName}/releases?pageSize=1`;
     const releasesResponse = await fetch(releasesUri, { headers });
     if (!releasesResponse.ok) throw new Error(`Failed to list releases: ${await releasesResponse.text()}`);
     const releases = await releasesResponse.json();
