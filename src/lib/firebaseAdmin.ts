@@ -1,4 +1,3 @@
-
 // src/lib/firebaseAdmin.ts
 import type { App } from 'firebase-admin/app';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
@@ -11,16 +10,7 @@ function getFirebaseAdminApp() {
     if (globalForAdmin.__ADMIN_APP__) {
         return globalForAdmin.__ADMIN_APP__;
     }
-    
-    if (!process.env.SERVICE_ACCOUNT_KEY) {
-        throw new Error(
-            "Service account key not found. " +
-            "For production, ensure the 'SERVICE_ACCOUNT_KEY' secret is set."
-        );
-    }
-    
-    const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
-    
+
     // Check if any apps are already initialized to prevent re-initialization.
     if (getApps().length > 0) {
         const existingApp = getApps().find(app => app.name === '[DEFAULT]');
@@ -30,8 +20,9 @@ function getFirebaseAdminApp() {
         }
     }
     
+    // In App Hosting, the SDK will automatically use the provisioned
+    // service account when initialized without explicit credentials.
     const newApp = initializeApp({
-        credential: cert(serviceAccount),
         projectId: process.env.GOOGLE_CLOUD_PROJECT,
     });
 
