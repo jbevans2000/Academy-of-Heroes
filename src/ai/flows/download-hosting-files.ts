@@ -13,7 +13,7 @@ import * as archiver from 'archiver';
 import { PassThrough } from 'stream';
 
 const PROJECT_ID = "academy-heroes-mziuf";
-const BUCKET_NAME = `${PROJECT_ID}.appspot.com`;
+const BUCKET_NAME = `academyheroesbackupfiles2025`;
 
 // Self-contained Firebase Admin initialization for this specific flow
 function getFlowAdminApp(): App {
