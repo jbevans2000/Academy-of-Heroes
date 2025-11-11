@@ -33,7 +33,7 @@ async function getAccessToken() {
 }
 
 export async function downloadAndZipHostingFiles(): Promise<ActionResponse> {
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+  const projectId = "academy-heroes-mziuf";
   if (!projectId) {
     return { success: false, error: 'Google Cloud Project ID is not configured.' };
   }
