@@ -12,23 +12,14 @@ function getFirebaseAdminApp() {
         return globalForAdmin.__ADMIN_APP__;
     }
     
-    let serviceAccount;
-    // In a deployed environment (like App Hosting), the secret will be in process.env
-    if (process.env.SERVICE_ACCOUNT_KEY) {
-        serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
-    } else {
-        // Fallback for local development if the JSON file exists.
-        try {
-             serviceAccount = require('../../../firebase-service-account.json');
-        } catch (e) {
-            console.error(
-                "Service account key not found. " +
-                "For local development, ensure 'firebase-service-account.json' is in the root directory. " +
-                "For production, ensure the 'SERVICE_ACCOUNT_KEY' secret is set."
-            );
-            throw new Error("Firebase Admin SDK initialization failed: Service Account credentials are not available.");
-        }
+    if (!process.env.SERVICE_ACCOUNT_KEY) {
+        throw new Error(
+            "Service account key not found. " +
+            "For production, ensure the 'SERVICE_ACCOUNT_KEY' secret is set."
+        );
     }
+    
+    const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
     
     // Check if any apps are already initialized to prevent re-initialization.
     if (getApps().length > 0) {
