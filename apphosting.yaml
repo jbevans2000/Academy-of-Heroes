@@ -1,0 +1,61 @@
+# The presence of this file turns on App Hosting.
+# To learn more, read the documentation:
+# https://firebase.google.com/docs/hosting/frameworks/app-hosting-diff
+
+# The following is a minimal App Hosting config.
+# See the docs for other options.
+
+# The region to deploy servers.
+region: us-central1
+# The number of instances to run.
+minInstances: 0
+# The maximum number of instances to run.
+maxInstances: 100
+# The amount of CPU to allocate to each instance.
+cpu: 0.16
+# The amount of memory to allocate to each instance.
+memory: 256Mi
+# The number of concurrent requests to allow per instance.
+concurrency: 80
+# The service account to use with this backend.
+serviceAccount: firebase-adminsdk-fbsvc@academy-heroes-mziuf.iam.gserviceaccount.com
+# The environment variables to set.
+# These can be referenced using process.env['NAME_OF_YOUR_VARIABLE']
+# in your code.
+env:
+  - variable: GOOGLE_CLOUD_PROJECT
+    value: academy-heroes-mziuf
+  - variable: GCLOUD_PROJECT
+    value: academy-heroes-mziuf
+  - variable: FIREBASE_PROJECT_ID
+    value: academy-heroes-mziuf
+# Specifies a schedule for a job to run.
+# The schedule is in cron format.
+# schedule:
+#   # The schedule to run the job.
+#   schedule: 0 5 * * *
+#   # The HTTP method to use for the job.
+#   httpMethod: GET
+#   # The path to the job.
+#   path: /api/cron
+#   # The time zone to use for the schedule.
+#   timeZone: America/Los_Angeles
+#   # The number of retries to attempt if the job fails.
+#   retryCount: 3
+#   # The maximum amount of time to wait before retrying a failed job.
+#   maxRetrySeconds: 60
+#   # The minimum amount of time to wait before retrying a failed job.
+#   minBackoffSeconds: 1
+#   # The maximum amount of time to wait for a job to complete.
+#   maxDoublings: 5
+# Ingress controls which traffic can reach your backend.
+# ingress: internal-and-gclb
+# Allow public access to your backend.
+# ingress: all
+# Allow only internal traffic to your backend.
+# ingress: internal
+# Allow only traffic from Firebase Authentication to your backend.
+# ingress: internal-and-firebase-auth
+# Allow only traffic from Cloud Load Balancing to your backend.
+# ingress: internal-and-gclb
+ingress: all

@@ -1,0 +1,1 @@
+This file is intentionally left blank. It is a placeholder to ensure the public directory is created, which helps in configuring Firebase Hosting settings via the console.

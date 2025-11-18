@@ -1,0 +1,184 @@
+
+
+'use server';
+
+import { doc, runTransaction, getDoc, updateDoc, deleteField, addDoc, collection, serverTimestamp, increment, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Student } from '@/lib/data';
+import type { Boon } from '@/lib/boons';
+import { logGameEvent } from '@/lib/gamelog';
+import { logBoonTransaction } from '@/lib/transactions';
+
+
+interface ActionResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+interface PurchaseBoonInput {
+    teacherUid: string;
+    studentUid: string;
+    boonId: string;
+}
+
+export async function purchaseBoon(input: PurchaseBoonInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, boonId } = input;
+    if (!teacherUid || !studentUid || !boonId) return { success: false, error: 'Invalid input.' };
+
+    try {
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
+
+        return await runTransaction(db, async (transaction) => {
+            const studentSnap = await transaction.get(studentRef);
+            const boonSnap = await transaction.get(boonRef);
+
+            if (!studentSnap.exists()) throw new Error("Student not found.");
+            if (!boonSnap.exists()) throw new Error("Reward not found.");
+
+            const student = studentSnap.data() as Student;
+            const boon = { id: boonSnap.id, ...boonSnap.data() } as Boon;
+
+            // --- SERVER-SIDE VALIDATION ---
+            if (student.gold < boon.cost) {
+                return { success: false, error: "You don't have enough gold!" };
+            }
+            if (boon.levelRequirement && student.level < boon.levelRequirement) {
+                return { success: false, error: `You must be level ${boon.levelRequirement} to purchase this item.` };
+            }
+
+
+            if (boon.requiresApproval) {
+                // Create a pending request instead of completing the purchase
+                const pendingRequestsRef = collection(db, 'teachers', teacherUid, 'pendingBoonRequests');
+                transaction.set(doc(pendingRequestsRef), {
+                    studentUid,
+                    studentName: student.studentName,
+                    characterName: student.characterName,
+                    boonId: boon.id,
+                    boonName: boon.name,
+                    cost: boon.cost,
+                    requestedAt: serverTimestamp(),
+                });
+                return { success: true, message: `Your request to purchase "${boon.name}" has been sent to the Guild Leader for approval!` };
+            } else {
+                // If no approval is needed, process the purchase immediately
+                const newGold = student.gold - boon.cost;
+                const newQuantity = (student.inventory?.[boonId] || 0) + 1;
+
+                transaction.update(studentRef, { 
+                    gold: newGold,
+                    [`inventory.${boonId}`]: newQuantity
+                });
+                
+                await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} purchased the reward: ${boon.name}.`);
+                await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'purchase', boon.cost);
+
+                return { success: true, message: `You have successfully purchased ${boon.name}!` };
+            }
+        });
+    } catch (error: any) {
+        console.error("Error purchasing boon:", error);
+        return { success: false, error: error.message || 'Failed to complete purchase.' };
+    }
+}
+
+interface UseBoonInput {
+    teacherUid: string;
+    studentUid: string;
+    boonId: string;
+    instructions?: string; // New field for student instructions
+}
+
+export async function useBoon(input: UseBoonInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, boonId, instructions } = input;
+    if (!teacherUid || !studentUid || !boonId) return { success: false, error: 'Invalid input.' };
+    
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+    const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
+
+    try {
+        return await runTransaction(db, async (transaction) => {
+            const studentSnap = await transaction.get(studentRef);
+            const boonSnap = await transaction.get(boonRef);
+
+            if (!studentSnap.exists()) throw new Error("Student not found.");
+            if (!boonSnap.exists()) throw new Error("Reward not found.");
+            
+            const student = studentSnap.data() as Student;
+            const boon = { id: boonSnap.id, ...boonSnap.data() } as Boon;
+
+            const currentQuantity = student.inventory?.[boonId] || 0;
+
+            if (currentQuantity <= 0) {
+                return { success: false, error: "You do not own this reward." };
+            }
+
+            // Decrement the quantity
+            const newQuantity = currentQuantity - 1;
+            
+            const updateData: any = {
+                [`inventory.${boonId}`]: newQuantity
+            };
+            
+            // If the quantity is zero, remove the boon from the inventory to keep it clean
+            if (newQuantity === 0) {
+                 updateData[`inventory.${boonId}`] = deleteField();
+            }
+
+            transaction.update(studentRef, updateData);
+            
+            await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} used the reward: ${boon.name}.`);
+            await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'use', undefined, instructions);
+
+            return { success: true, message: `You have used ${boon.name}.` };
+        });
+    } catch (error: any) {
+        console.error("Error using boon:", error);
+        return { success: false, error: error.message || "Failed to use the reward." };
+    }
+}
+
+
+interface AdjustInventoryInput {
+    teacherUid: string;
+    studentUid: string;
+    boonId: string;
+    change: number; // e.g., 1 to add, -1 to remove
+}
+
+export async function adjustStudentInventory(input: AdjustInventoryInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, boonId, change } = input;
+    if (!teacherUid || !studentUid || !boonId) return { success: false, error: 'Invalid input.' };
+
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+
+    try {
+        const studentSnap = await getDoc(studentRef);
+        if (!studentSnap.exists()) {
+            return { success: false, error: 'Student not found.' };
+        }
+
+        const studentData = studentSnap.data();
+        const currentQuantity = studentData.inventory?.[boonId] || 0;
+        const newQuantity = Math.max(0, currentQuantity + change);
+
+        const updateData: any = {};
+        if (newQuantity === 0) {
+            updateData[`inventory.${boonId}`] = deleteField();
+        } else {
+            updateData[`inventory.${boonId}`] = newQuantity;
+        }
+
+        await updateDoc(studentRef, updateData);
+        
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Manually adjusted ${studentData.characterName}'s inventory for item ID ${boonId} by ${change}.`);
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error adjusting inventory:", error);
+        return { success: false, error: "Failed to update student's inventory." };
+    }
+}

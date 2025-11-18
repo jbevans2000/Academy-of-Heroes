@@ -1,0 +1,645 @@
+
+
+'use server';
+
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment, arrayRemove, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Student, QuestHub, Chapter } from '@/lib/data';
+import { logGameEvent } from '@/lib/gamelog';
+import { handleLevelChange } from '@/lib/game-mechanics';
+import { logAvatarEvent } from '@/lib/avatar-log';
+
+// --------- INTERFACES ---------
+
+interface ActionResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+interface CountResponse extends ActionResponse {
+    count?: number;
+}
+
+interface QuestSettings {
+    globalApprovalRequired: boolean;
+    isDailyLimitEnabled: boolean; // New setting
+    studentOverrides?: {
+        [studentUid: string]: boolean;
+    };
+}
+
+interface CompleteChapterInput {
+    teacherUid: string;
+    studentUid: string;
+    hubId: string;
+    chapterId: string;
+    quizScore?: number;
+    quizAnswers?: any[];
+}
+
+
+interface ApproveChapterCompletionInput {
+    teacherUid: string;
+    requestId: string;
+}
+
+interface SetStudentQuestProgressInput {
+    teacherUid: string;
+    studentUids: string[];
+    hubId: string;
+    chapterNumber: number; // This is the chapter the student should START, not complete.
+}
+
+interface UncompleteChapterInput {
+    teacherUid: string;
+    studentUid: string;
+    hubId: string;
+    chapterNumber: number;
+}
+
+// --------- SETTINGS MANAGEMENT ---------
+
+export async function getQuestSettings(teacherUid: string): Promise<QuestSettings> {
+    const teacherRef = doc(db, 'teachers', teacherUid);
+    const teacherSnap = await getDoc(teacherRef);
+    if (teacherSnap.exists()) {
+        const data = teacherSnap.data();
+        return {
+            globalApprovalRequired: data.questSettings?.globalApprovalRequired ?? false,
+            isDailyLimitEnabled: data.questSettings?.isDailyLimitEnabled ?? true, // Default to true
+            studentOverrides: data.questSettings?.studentOverrides || {},
+        };
+    }
+    // Default settings if not found
+    return { globalApprovalRequired: false, isDailyLimitEnabled: true, studentOverrides: {} };
+}
+
+export async function updateQuestSettings(teacherUid: string, newSettings: Partial<QuestSettings>): Promise<ActionResponse> {
+    if (!teacherUid) return { success: false, error: 'User not authenticated.' };
+    try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        await setDoc(teacherRef, { questSettings: newSettings }, { merge: true });
+        
+        return { success: true, message: 'Quest settings updated.' };
+    } catch (error: any) {
+        console.error("Error updating quest settings:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+
+// --------- REQUEST MANAGEMENT ---------
+
+export async function completeChapter(input: CompleteChapterInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, hubId, chapterId, quizScore, quizAnswers } = input;
+    if (!teacherUid || !studentUid || !hubId || !chapterId) return { success: false, error: 'Invalid input.' };
+
+    try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
+        const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+        
+        const questSettings = await getQuestSettings(teacherUid);
+
+        const [teacherSnap, studentSnap, chapterSnap, hubSnap] = await Promise.all([getDoc(teacherRef), getDoc(studentRef), getDoc(chapterRef), getDoc(hubRef)]);
+
+        if (!studentSnap.exists()) throw new Error("Student not found.");
+        if (!chapterSnap.exists()) throw new Error("Chapter not found.");
+        if (!hubSnap.exists()) throw new Error("Quest Hub not found.");
+
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
+        const student = studentSnap.data() as Student;
+        const chapter = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
+        const hub = { id: hubSnap.id, ...hubSnap.data() } as QuestHub;
+
+        // Daily Completion Limit Check (only if enabled)
+        if (questSettings.isDailyLimitEnabled && student.lastChapterCompletion) {
+            const lastCompletionDate = student.lastChapterCompletion.toDate();
+            const now = new Date();
+            const timeSinceCompletion = now.getTime() - lastCompletionDate.getTime();
+            const hoursSinceCompletion = timeSinceCompletion / (1000 * 60 * 60);
+            if (hoursSinceCompletion < 24) {
+                return { success: false, error: 'You may only complete one chapter per day. Your next quest awaits tomorrow!' };
+            }
+        }
+        
+        if (hub.hubType !== 'sidequest') {
+            const currentProgress = student.questProgress?.[hubId] || 0;
+            if (chapter.chapterNumber > currentProgress + 1) {
+                return { success: false, error: "This chapter cannot be marked as complete yet. Complete the previous chapter first." };
+            }
+        }
+
+        const isGlobalApprovalOn = questSettings.globalApprovalRequired;
+        const studentOverride = questSettings.studentOverrides?.[student.uid];
+        let needsApproval = isGlobalApprovalOn;
+        if (studentOverride !== undefined) {
+            needsApproval = studentOverride;
+        }
+        
+        const isAlreadyCompleted = (student.completedChapters || []).includes(chapterId);
+
+        if (needsApproval && !isAlreadyCompleted) {
+            const requestsRef = collection(db, 'teachers', teacherUid, 'pendingQuestRequests');
+            await addDoc(requestsRef, {
+                studentUid,
+                studentName: student.studentName,
+                characterName: student.characterName,
+                hubId: hub.id,
+                chapterId: chapter.id,
+                chapterNumber: chapter.chapterNumber,
+                chapterTitle: chapter.title,
+                quizScore,
+                quizAnswers,
+                requestedAt: serverTimestamp(),
+            });
+            return { success: true, message: 'Request sent for approval.' };
+        }
+
+        const chaptersInHubQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
+        const totalChaptersInHub = (await getDocs(chaptersInHubQuery)).size;
+        
+        const newProgress = { ...student.questProgress, [hubId]: Math.max(student.questProgress?.[hubId] || 0, chapter.chapterNumber) };
+        let updates: Partial<Student> = {
+            questProgress: newProgress,
+            lastChapterCompletion: serverTimestamp()
+        };
+
+        let rewardMessage = '';
+        let wasRewardGiven = false;
+
+        if (hub.areRewardsEnabled) {
+            let canReceiveReward = true;
+            if (hub.hubType === 'sidequest') {
+                canReceiveReward = !(student.rewardedSideQuestChapters || []).includes(chapter.id);
+            } else {
+                canReceiveReward = !(student.completedChapters || []).includes(chapter.id);
+            }
+
+            if (canReceiveReward) {
+                wasRewardGiven = true;
+                const xpToAdd = hub.rewardXp || 0;
+                const goldToAdd = hub.rewardGold || 0;
+
+                if (goldToAdd > 0) updates.gold = increment(goldToAdd);
+                if (xpToAdd > 0) {
+                     const newXp = (student.xp || 0) + xpToAdd;
+                     const levelUpdates = handleLevelChange(student, newXp, levelingTable);
+                     updates = { ...updates, ...levelUpdates };
+                }
+                
+                if (xpToAdd > 0 || goldToAdd > 0) {
+                     await logAvatarEvent(teacherUid, studentUid, {
+                        source: 'Quest Completion',
+                        xp: xpToAdd,
+                        gold: goldToAdd,
+                        reason: `Completed "${chapter.title}"`,
+                    });
+                }
+                rewardMessage = ` You have been awarded ${xpToAdd} XP and ${goldToAdd} Gold!`;
+            }
+        }
+        
+        updates.completedChapters = arrayUnion(chapter.id);
+        if (hub.hubType === 'sidequest' && wasRewardGiven) {
+            updates.rewardedSideQuestChapters = arrayUnion(chapter.id);
+        }
+
+        if (chapter.chapterNumber === totalChaptersInHub && hub.hubType !== 'sidequest') {
+             if ((student.hubsCompleted || 0) < hub.hubOrder) {
+                updates.hubsCompleted = hub.hubOrder;
+            }
+        }
+        
+        await updateDoc(studentRef, updates);
+        if(!isAlreadyCompleted) {
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+        }
+
+        return { success: true, message: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}!${rewardMessage}` };
+
+    } catch (error: any) {
+        console.error("Error completing chapter:", error);
+        return { success: false, error: error.message || "Failed to complete chapter." };
+    }
+}
+
+
+async function approveSingleRequest(batch: any, teacherUid: string, requestId: string, requestData: any, levelingTable: any) {
+    const { studentUid, hubId, chapterId, chapterNumber, chapterTitle } = requestData;
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+    const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+    
+    const studentSnap = await getDoc(studentRef);
+    const hubSnap = await getDoc(hubRef);
+
+    if (!studentSnap.exists() || !hubSnap.exists()) {
+        console.warn(`Student ${studentUid} or Hub ${hubId} not found for request ${requestId}. Skipping.`);
+        const requestRefToDelete = doc(db, 'teachers', teacherUid, 'pendingQuestRequests', requestId);
+        batch.delete(requestRefToDelete); // Clean up invalid request
+        return;
+    }
+
+    const studentData = studentSnap.data() as Student;
+    const hubData = hubSnap.data() as QuestHub;
+    const currentProgress = studentData.questProgress?.[hubId] || 0;
+
+    if (chapterNumber === currentProgress + 1 || hubData.hubType === 'sidequest') {
+        const newProgressNumber = Math.max(currentProgress, chapterNumber);
+        const newProgress = { ...studentData.questProgress, [hubId]: newProgressNumber };
+        let updates: Partial<Student> = {
+            questProgress: newProgress,
+            lastChapterCompletion: serverTimestamp()
+        };
+
+        let canReceiveReward = true;
+        if (hubData.hubType === 'sidequest') {
+            canReceiveReward = !(studentData.rewardedSideQuestChapters || []).includes(chapterId);
+        } else {
+            canReceiveReward = !(studentData.completedChapters || []).includes(chapterId);
+        }
+
+        if (hubData.areRewardsEnabled && canReceiveReward) {
+            const xpToAdd = hubData.rewardXp || 0;
+            const goldToAdd = hubData.rewardGold || 0;
+            
+            if(goldToAdd > 0) updates.gold = increment(goldToAdd);
+
+            if(xpToAdd > 0) {
+                const newXp = (studentData.xp || 0) + xpToAdd;
+                const levelUpdates = handleLevelChange(studentData, newXp, levelingTable);
+                updates = { ...updates, ...levelUpdates };
+            }
+
+             if (xpToAdd > 0 || goldToAdd > 0) {
+                 await logAvatarEvent(teacherUid, studentUid, {
+                    source: 'Quest Completion',
+                    xp: xpToAdd,
+                    gold: goldToAdd,
+                    reason: `Completed "${chapterTitle}"`,
+                });
+            }
+             if (hubData.hubType === 'sidequest') {
+                updates.rewardedSideQuestChapters = arrayUnion(chapterId);
+            }
+        }
+        
+        updates.completedChapters = arrayUnion(chapterId);
+        batch.update(studentRef, updates);
+        await logGameEvent(teacherUid, 'CHAPTER', `${studentData.characterName}'s completion of "${chapterTitle}" was approved.`);
+    }
+
+    const requestRef = doc(db, 'teachers', teacherUid, 'pendingQuestRequests', requestId);
+    batch.delete(requestRef);
+}
+
+export async function approveChapterCompletion(input: ApproveChapterCompletionInput): Promise<ActionResponse> {
+    const { teacherUid, requestId } = input;
+    if (!teacherUid) return { success: false, error: 'User not authenticated.' };
+    
+    const requestRef = doc(db, 'teachers', teacherUid, 'pendingQuestRequests', requestId);
+    const requestSnap = await getDoc(requestRef);
+
+    if (!requestSnap.exists()) return { success: false, error: 'This request no longer exists.' };
+    
+    try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
+
+        const batch = writeBatch(db);
+        await approveSingleRequest(batch, teacherUid, requestId, requestSnap.data(), levelingTable);
+        await batch.commit();
+        return { success: true, message: 'Quest completion approved!' };
+    } catch (error: any) {
+        console.error("Error approving request:", error);
+        return { success: false, error: "Failed to approve the request." };
+    }
+}
+
+export async function denyChapterCompletion(teacherUid: string, requestId: string): Promise<ActionResponse> {
+    if (!teacherUid) return { success: false, error: 'User not authenticated.' };
+
+    try {
+        const requestRef = doc(db, 'teachers', teacherUid, 'pendingQuestRequests', requestId);
+        await deleteDoc(requestRef);
+        return { success: true, message: 'Request denied.' };
+    } catch (error: any) {
+        console.error("Error denying request:", error);
+        return { success: false, error: "Failed to deny the request." };
+    }
+}
+
+export async function approveAllPending(teacherUid: string): Promise<CountResponse> {
+    if (!teacherUid) return { success: false, error: 'User not authenticated.' };
+
+    const requestsRef = collection(db, 'teachers', teacherUid, 'pendingQuestRequests');
+    const requestsSnapshot = await getDocs(requestsRef);
+
+    if (requestsSnapshot.empty) {
+        return { success: true, message: 'No pending requests to approve.', count: 0 };
+    }
+    
+    try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
+
+        const batch = writeBatch(db);
+        for (const requestDoc of requestsSnapshot.docs) {
+            await approveSingleRequest(batch, teacherUid, requestDoc.id, requestDoc.data(), levelingTable);
+        }
+        await batch.commit();
+        return { success: true, message: 'All pending requests approved.', count: requestsSnapshot.size };
+    } catch (error: any) {
+        console.error("Error approving all requests:", error);
+        return { success: false, error: 'Failed to approve all requests.' };
+    }
+}
+
+// --------- PROGRESS MANAGEMENT ---------
+
+export async function setStudentQuestProgress(input: SetStudentQuestProgressInput): Promise<ActionResponse> {
+    const { teacherUid, studentUids, hubId, chapterNumber } = input;
+    if (!teacherUid || studentUids.length === 0 || !hubId) {
+        return { success: false, error: 'Invalid input provided.' };
+    }
+
+    const batch = writeBatch(db);
+    try {
+        const hubsRef = collection(db, 'teachers', teacherUid, 'questHubs');
+        const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
+        const [hubsSnapshot, chaptersSnapshot] = await Promise.all([getDocs(hubsRef), getDocs(chaptersRef)]);
+        
+        const allHubs = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)).sort((a,b) => a.hubOrder - b.hubOrder);
+        const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+
+        for (const studentUid of studentUids) {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+            const studentSnap = await getDoc(studentRef);
+            if (!studentSnap.exists()) continue;
+
+            const studentData = studentSnap.data() as Student;
+            const newQuestProgress = { ...(studentData.questProgress || {}) };
+            
+            const targetHub = allHubs.find(h => h.id === hubId);
+            if (!targetHub) continue;
+            
+            // Corrected Logic: Set progress to the chapter *before* the target chapter.
+            // This makes the target chapter the next available one.
+            newQuestProgress[hubId] = Math.max(0, chapterNumber - 1);
+
+
+            for (const hub of allHubs) {
+                if (hub.hubType === 'sidequest') continue; // Skip side quest hubs
+                if (hub.hubOrder < targetHub.hubOrder) {
+                    const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
+                    newQuestProgress[hub.id] = chaptersInThisHub.length;
+                } else if (hub.hubOrder > targetHub.hubOrder) {
+                     delete newQuestProgress[hub.id];
+                }
+            }
+            
+            const newCompletedChapters = new Set<string>();
+            for (const hub of allHubs) {
+                const chaptersCompletedInHub = newQuestProgress[hub.id] || 0;
+                
+                if (chaptersCompletedInHub > 0) {
+                    const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
+                    for (let i = 1; i <= chaptersCompletedInHub; i++) {
+                        const chapterToMark = chaptersInThisHub.find(c => c.chapterNumber === i);
+                        if (chapterToMark) {
+                            newCompletedChapters.add(chapterToMark.id);
+                        }
+                    }
+                }
+            }
+
+            let highestCompletedOrder = 0;
+            for (const hub of allHubs) {
+                if(hub.hubType === 'sidequest') continue;
+                const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
+                if (chaptersInHub.length > 0 && newQuestProgress[hub.id] === chaptersInHub.length) {
+                    if (hub.hubOrder > highestCompletedOrder) {
+                        highestCompletedOrder = hub.hubOrder;
+                    }
+                }
+            }
+
+            batch.update(studentRef, { 
+                questProgress: newQuestProgress,
+                hubsCompleted: highestCompletedOrder,
+                completedChapters: Array.from(newCompletedChapters)
+            });
+        }
+        
+        await batch.commit();
+        const targetHubName = allHubs.find(h => h.id === hubId)?.name || 'Unknown Hub';
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Set quest progress for ${studentUids.length} student(s) to start Hub: ${targetHubName}, Chapter: ${chapterNumber}.`);
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error setting student quest progress:", error);
+        return { success: false, error: error.message || "Failed to update student progress." };
+    }
+}
+
+export async function uncompleteChapter(input: UncompleteChapterInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, hubId, chapterNumber } = input;
+    if (!teacherUid || !studentUid || !hubId || chapterNumber <= 0) {
+        return { success: false, error: 'Invalid input.' };
+    }
+
+    try {
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+
+        const [studentSnap, hubSnap] = await Promise.all([getDoc(studentRef), getDoc(hubRef)]);
+
+        if (!studentSnap.exists()) throw new Error("Student not found.");
+        if (!hubSnap.exists()) throw new Error("Quest Hub not found.");
+
+        const student = studentSnap.data() as Student;
+        const hub = hubSnap.data() as QuestHub;
+
+        if (hub.hubType === 'sidequest') {
+            const chaptersQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId), where('chapterNumber', '==', chapterNumber), limit(1));
+            const chapterSnapshot = await getDocs(chaptersQuery);
+            if (chapterSnapshot.empty) {
+                throw new Error("Chapter to uncomplete not found in the side quest hub.");
+            }
+            const chapterIdToUncomplete = chapterSnapshot.docs[0].id;
+            
+            await updateDoc(studentRef, {
+                completedChapters: arrayRemove(chapterIdToUncomplete)
+            });
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} is reviewing the side quest chapter: ${chapterSnapshot.docs[0].data().title}.`);
+            return { success: true, message: "Your progress for this side quest has been reset." };
+        }
+
+        const newProgressNumber = chapterNumber - 1;
+        const newQuestProgress = { ...(student.questProgress || {}), [hubId]: newProgressNumber };
+
+        const hubsRef = collection(db, 'teachers', teacherUid, 'questHubs');
+        const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
+        const [hubsSnapshot, chaptersSnapshot] = await Promise.all([getDocs(hubsRef), getDocs(chaptersRef)]);
+        
+        const allHubs = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)).sort((a,b) => a.hubOrder - b.hubOrder);
+        
+        let highestCompletedOrder = 0;
+        for (const h of allHubs) {
+            if (h.hubType === 'sidequest') continue;
+            const chaptersInHub = chaptersSnapshot.docs.filter(doc => doc.data().hubId === h.id);
+            if (newQuestProgress[h.id] === chaptersInHub.length && chaptersInHub.length > 0) {
+                 if (h.hubOrder > highestCompletedOrder) {
+                    highestCompletedOrder = h.hubOrder;
+                }
+            }
+        }
+        
+        await updateDoc(studentRef, { 
+            questProgress: newQuestProgress,
+            hubsCompleted: highestCompletedOrder,
+        });
+
+        await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} has returned to Chapter ${chapterNumber} to review their lessons.`);
+
+        return { success: true, message: "Your progress has been reset. You may now proceed from this chapter again." };
+
+    } catch (error: any) {
+        console.error("Error uncompleting chapter:", error);
+        return { success: false, error: error.message || 'Failed to update your progress.' };
+    }
+}
+
+
+// --------- HUB & CHAPTER DELETION ---------
+
+interface DeleteHubInput {
+    teacherUid: string;
+    hubId: string;
+}
+
+export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionResponse> {
+    const { teacherUid, hubId } = input;
+    if (!teacherUid || !hubId) return { success: false, error: "Invalid input provided." };
+
+    try {
+        const batch = writeBatch(db);
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+
+        const chaptersQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
+        const chaptersSnapshot = await getDocs(chaptersQuery);
+        const deletedChapterIds = chaptersSnapshot.docs.map(doc => doc.id);
+
+        if (!chaptersSnapshot.empty) {
+            chaptersSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+        }
+
+        const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+        batch.delete(hubRef);
+
+        if (deletedChapterIds.length > 0) {
+            const studentsSnapshot = await getDocs(studentsRef);
+            studentsSnapshot.forEach(studentDoc => {
+                const studentRef = studentDoc.ref;
+                const studentData = studentDoc.data() as Student;
+                const questProgress = studentData.questProgress || {};
+
+                if (questProgress[hubId]) {
+                    delete questProgress[hubId];
+                }
+                
+                const newCompletedChapters = studentData.completedChapters?.filter(id => !deletedChapterIds.includes(id)) || [];
+
+                batch.update(studentRef, {
+                    questProgress: questProgress,
+                    completedChapters: newCompletedChapters,
+                });
+            });
+        }
+
+        await batch.commit();
+        
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Quest Hub with ID: ${hubId} and its ${chaptersSnapshot.size} chapter(s).`);
+
+        return { success: true, message: 'Hub and all its chapters have been deleted. Student records have been cleaned up.' };
+
+    } catch (error: any) {
+        console.error("Error deleting quest hub:", error);
+        return { success: false, error: error.message || 'Failed to delete the quest hub.' };
+    }
+}
+
+interface DeleteChapterInput {
+    teacherUid: string;
+    chapterId: string;
+}
+
+export async function deleteChapter(input: DeleteChapterInput): Promise<ActionResponse> {
+    const { teacherUid, chapterId } = input;
+    if (!teacherUid || !chapterId) return { success: false, error: "Invalid input provided." };
+
+    try {
+        const batch = writeBatch(db);
+        const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
+        const chapterSnap = await getDoc(chapterRef);
+
+        if (!chapterSnap.exists()) {
+            throw new Error("Chapter does not exist.");
+        }
+        const deletedChapter = chapterSnap.data() as Chapter;
+        const hubId = deletedChapter.hubId;
+        const deletedChapterNumber = deletedChapter.chapterNumber;
+
+        batch.delete(chapterRef);
+        
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        const studentsSnapshot = await getDocs(studentsRef);
+
+        studentsSnapshot.forEach(studentDoc => {
+            const studentRef = studentDoc.ref;
+            const studentData = studentDoc.data() as Student;
+            const questProgress = studentData.questProgress || {};
+            const completedInHub = questProgress[hubId] || 0;
+
+            const updates: { [key: string]: any } = {};
+
+            if (studentData.completedChapters?.includes(chapterId)) {
+                updates.completedChapters = arrayRemove(chapterId);
+            }
+
+            if (completedInHub >= deletedChapterNumber) {
+                updates[`questProgress.${hubId}`] = completedInHub - 1;
+            }
+
+            if (Object.keys(updates).length > 0) {
+                batch.update(studentRef, updates);
+            }
+        });
+        
+        const subsequentChaptersQuery = firestoreQuery(
+            collection(db, 'teachers', teacherUid, 'chapters'), 
+            where('hubId', '==', hubId), 
+            where('chapterNumber', '>', deletedChapterNumber)
+        );
+        const subsequentChaptersSnapshot = await getDocs(subsequentChaptersQuery);
+        subsequentChaptersSnapshot.forEach(doc => {
+            batch.update(doc.ref, { chapterNumber: increment(-1) });
+        });
+
+        await batch.commit();
+
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Chapter ${deletedChapter.chapterNumber}: "${deletedChapter.title}".`);
+        return { success: true, message: 'Chapter has been deleted and student progress has been adjusted.' };
+
+    } catch (error: any) {
+        console.error("Error deleting chapter:", error);
+        return { success: false, error: error.message || 'Failed to delete the chapter.' };
+    }
+}

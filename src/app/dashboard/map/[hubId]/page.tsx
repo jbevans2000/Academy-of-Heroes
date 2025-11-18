@@ -1,0 +1,241 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useRouter, useParams } from 'next/navigation';
+import { ArrowLeft, LayoutDashboard } from "lucide-react";
+import Image from 'next/image';
+import Link from 'next/link';
+import { collection, getDocs, doc, getDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import type { QuestHub, Chapter } from '@/lib/quests';
+import type { Student } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+export default function HubMapPage() {
+    const router = useRouter();
+    const params = useParams();
+    const hubId = params.hubId as string;
+
+    const [hub, setHub] = useState<QuestHub | null>(null);
+    const [chapters, setChapters] = useState<Chapter[]>([]);
+    const [student, setStudent] = useState<Student | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const studentMetaRef = doc(db, 'students', user.uid);
+                const studentMetaSnap = await getDoc(studentMetaRef);
+
+                if (studentMetaSnap.exists()) {
+                    const foundTeacherUid = studentMetaSnap.data().teacherUid;
+                    setTeacherUid(foundTeacherUid);
+                    
+                    const studentDocRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
+                    const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setStudent(docSnap.data() as Student);
+                        } else {
+                            router.push('/');
+                        }
+                    });
+                    // This will need to be cleaned up, but we must return it from the top-level useEffect
+                } else {
+                    router.push('/');
+                }
+            } else {
+                router.push('/');
+            }
+        });
+        return () => authUnsubscribe();
+    }, [router]);
+
+
+    useEffect(() => {
+        if (!hubId || !teacherUid) return;
+
+        let unsubHub: (() => void) | undefined;
+        let unsubChapters: (() => void) | undefined;
+        
+        const fetchHubData = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch hub details
+                const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+                unsubHub = onSnapshot(hubDocRef, (hubDocSnap) => {
+                    if (hubDocSnap.exists()) {
+                        setHub({ id: hubDocSnap.id, ...hubDocSnap.data() } as QuestHub);
+                    }
+                });
+
+
+                // Fetch chapters for this hub, ordered by chapter number
+                const chaptersQuery = query(
+                    collection(db, 'teachers', teacherUid, 'chapters'), 
+                    where('hubId', '==', hubId)
+                );
+                unsubChapters = onSnapshot(chaptersQuery, (chaptersSnapshot) => {
+                    let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+                    chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber);
+                    setChapters(chaptersData);
+                });
+
+            } catch (error) {
+                console.error("Error fetching hub data:", error);
+            } finally {
+                // This might need adjustment if loading feels off
+                setTimeout(() => setIsLoading(false), 500); 
+            }
+        };
+
+        fetchHubData();
+        
+        return () => {
+            if (unsubHub) unsubHub();
+            if (unsubChapters) unsubChapters();
+        };
+
+    }, [hubId, teacherUid]);
+
+    const isSideQuestHub = hub?.hubType === 'sidequest';
+
+    const { completedChapters, currentChapters } = (() => {
+        if (!student) return { completedChapters: [], currentChapters: [] };
+
+        const lastCompletedChapter = student.questProgress?.[hubId] || 0;
+        
+        if (isSideQuestHub) {
+            const studentCompletedInHub = student.completedChapters || [];
+            const completed = chapters.filter(c => studentCompletedInHub.includes(c.id));
+            const current = chapters.filter(c => c.isActive && !studentCompletedInHub.includes(c.id));
+            return { completedChapters: completed, currentChapters: current };
+        } else {
+            const completed = chapters.filter(c => c.chapterNumber <= lastCompletedChapter);
+            const current = chapters.filter(c => c.chapterNumber === lastCompletedChapter + 1 && (c.isActive ?? true));
+            return { completedChapters: completed, currentChapters: current };
+        }
+    })();
+
+    if (isLoading || !student) {
+        return (
+             <div className="flex flex-col items-center justify-start bg-background p-2">
+                <Skeleton className="h-24 w-full max-w-7xl" />
+                <div className="flex justify-center gap-4 mt-4">
+                    <Skeleton className="h-10 w-48" />
+                    <Skeleton className="h-10 w-48" />
+                </div>
+            </div>
+        )
+    }
+
+    if (!hub) {
+        return <p>Hub not found.</p>;
+    }
+    
+    const renderChapterMarker = (chapter: Chapter, status: 'completed' | 'current') => {
+        const colorClass = status === 'completed' ? 'bg-green-500' : 'bg-yellow-400 animate-pulse-glow';
+        return (
+            <TooltipProvider key={`${status}-${chapter.id}`} delayDuration={100}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Link href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
+                            <div
+                                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                                style={{
+                                    left: `${chapter.coordinates.x}%`,
+                                    top: `${chapter.coordinates.y}%`,
+                                }}
+                            >
+                                <div className={`w-8 h-8 rounded-full ring-2 ring-white shadow-xl flex items-center justify-center font-bold text-white text-sm ${colorClass}`}>
+                                    {chapter.chapterNumber}
+                                </div>
+                            </div>
+                        </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={5} className="p-2 bg-yellow-100 text-yellow-900 border-yellow-200">
+                        <p className="font-semibold">Chapter {chapter.chapterNumber}</p>
+                        <p>{chapter.title}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    };
+
+    return (
+        <div className="relative flex flex-col items-center justify-start bg-background p-2">
+            <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(3).jpg?alt=media&token=f46483bd-849a-45cc-9e28-fe59372017b6')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.5,
+                }}
+            />
+            <Card className="w-full max-w-7xl shadow-2xl">
+                <CardHeader className="py-4">
+                    <CardTitle className="text-3xl font-bold text-center text-primary">{hub.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-2">
+                    <div className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50">
+                        <Image
+                            src={hub.worldMapUrl}
+                            alt={`${hub.name} Map`}
+                            fill
+                            className="object-contain"
+                            priority
+                         />
+                         <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+                            {completedChapters.slice(0, -1).map((chapter, index) => {
+                                const nextChapter = completedChapters[index + 1];
+                                if (!isSideQuestHub && nextChapter) { // Only draw lines for standard hubs
+                                    return (
+                                        <line
+                                            key={`line-${chapter.id}`}
+                                            x1={`${chapter.coordinates.x}%`}
+                                            y1={`${chapter.coordinates.y}%`}
+                                            x2={`${nextChapter.coordinates.x}%`}
+                                            y2={`${nextChapter.coordinates.y}%`}
+                                            stroke="#10B981"
+                                            strokeWidth="3"
+                                        />
+                                    );
+                                }
+                                return null;
+                            })}
+                         </svg>
+                         {completedChapters.map(chapter => renderChapterMarker(chapter, 'completed'))}
+                         {currentChapters.map(chapter => renderChapterMarker(chapter, 'current'))}
+                    </div>
+                </CardContent>
+            </Card>
+            <div className="flex justify-center gap-4 mt-4">
+                <Button 
+                    onClick={() => router.push('/dashboard/map')} 
+                    variant="outline"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Return to World Map
+                </Button>
+                <Button 
+                    onClick={() => router.push('/dashboard')}
+                    variant="outline"
+                >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Return to Dashboard
+                </Button>
+            </div>
+        </div>
+    );
+}

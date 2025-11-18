@@ -1,0 +1,564 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDocs } from 'firebase/firestore';
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, auth, app } from '@/lib/firebase';
+import type { Student, Company } from '@/lib/data';
+import { TeacherHeader } from '@/components/teacher/teacher-header';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Upload, Users, Briefcase, X, UserX, UserPlus, ChevronDown } from 'lucide-react';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+const companyColors = [
+    'hsl(0, 72%, 51%)',   // Red
+    'hsl(217, 91%, 60%)', // Blue
+    'hsl(142, 71%, 45%)', // Green
+    'hsl(48, 96%, 53%)',  // Yellow
+    'hsl(262, 84%, 59%)', // Purple
+    'hsl(32, 95%, 55%)',  // Orange
+    'hsl(327, 82%, 55%)', // Pink
+    'hsl(180, 82%, 35%)', // Teal
+];
+
+const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStudent }: {
+    company: Company;
+    students: Student[];
+    onEdit: (company: Company) => void;
+    onDelete: (companyId: string) => void;
+    onDrop: (studentId: string, companyId: string) => void;
+    onRemoveStudent: (studentId: string) => void;
+}) => {
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        const studentId = e.dataTransfer.getData('studentId');
+        onDrop(studentId, company.id);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    return (
+        <Card onDrop={handleDrop} onDragOver={handleDragOver} style={{ borderColor: company.color, borderWidth: company.color ? '2px' : '1px' }}>
+            <AccordionItem value={company.id} className="border-b-0">
+                <CardHeader className="flex flex-row items-center justify-between p-4">
+                     <AccordionTrigger className="w-full justify-start p-0 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                            {company.logoUrl && <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full object-cover" />}
+                            <CardTitle style={{ color: company.color }}>{company.name} ({students.length})</CardTitle>
+                        </div>
+                    </AccordionTrigger>
+                    <div className="flex gap-1 shrink-0 ml-4">
+                        <Button variant="ghost" size="icon" onClick={() => onEdit(company)}><Edit className="h-4 w-4" /></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Company: {company.name}?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will disband the company, and all its members will become freelancers. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDelete(company.id)} className="bg-destructive hover:bg-destructive/90">
+                                        Yes, Disband Company
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </CardHeader>
+                <AccordionContent>
+                    <CardContent className="space-y-2 pt-0 p-4">
+                        {students.length > 0 ? students.map(student => (
+                            <div key={student.uid} className="flex items-center justify-between p-2 bg-secondary rounded-md">
+                                <span className="font-medium">{student.studentName}</span>
+                                 <Button variant="ghost" size="icon" onClick={() => onRemoveStudent(student.uid)}><X className="h-4 w-4" /></Button>
+                            </div>
+                        )) : <p className="text-muted-foreground text-sm p-4 text-center">Drag students here to assign them.</p>}
+                    </CardContent>
+                </AccordionContent>
+            </AccordionItem>
+        </Card>
+    );
+};
+
+const FreelancerCard = ({ students, onDrop }: {
+    students: Student[];
+    onDrop: (studentId: string) => void;
+}) => {
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        const studentId = e.dataTransfer.getData('studentId');
+        onDrop(studentId);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+    
+    const handleDragStart = (e: React.DragEvent, studentId: string) => {
+        e.dataTransfer.setData('studentId', studentId);
+    };
+
+    return (
+        <Card onDrop={handleDrop} onDragOver={handleDragOver} className="bg-muted/50">
+            <CardHeader>
+                <CardTitle>Freelancers</CardTitle>
+                <CardDescription>Students not assigned to a company.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {students.map(student => (
+                     <div 
+                        key={student.uid} 
+                        className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm cursor-grab" 
+                        draggable 
+                        onDragStart={(e) => handleDragStart(e, student.uid)}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Image src={student.avatarUrl} alt={student.characterName} width={32} height={32} className="rounded-full" />
+                            <span className="font-medium">{student.studentName}</span>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
+
+export default function CompaniesPage() {
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const [teacher, setTeacher] = useState<User | null>(null);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
+    const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+    const [companyName, setCompanyName] = useState('');
+    const [companyLogo, setCompanyLogo] = useState<File | null>(null);
+    const [companyBackground, setCompanyBackground] = useState<File | null>(null);
+    const [companyColor, setCompanyColor] = useState<string>('');
+    const [isSaving, setIsSaving] = useState(false);
+    
+    const [companyToDelete, setCompanyToDelete] = useState<string | null>(null);
+
+    // State for new functions
+    const [isClearing, setIsClearing] = useState(false);
+    const [isDistributing, setIsDistributing] = useState(false);
+
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, user => {
+            if (user) setTeacher(user);
+            else router.push('/teacher/login');
+        });
+        return () => unsubscribe();
+    }, [router]);
+
+    useEffect(() => {
+        if (!teacher) return;
+        
+        const unsubStudents = onSnapshot(collection(db, 'teachers', teacher.uid, 'students'), (snapshot) => {
+            setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+            setIsLoading(false);
+        });
+
+        const unsubCompanies = onSnapshot(collection(db, 'teachers', teacher.uid, 'companies'), (snapshot) => {
+            setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+        });
+
+        return () => {
+            unsubStudents();
+            unsubCompanies();
+        };
+    }, [teacher]);
+
+    const openNewCompanyDialog = () => {
+        setEditingCompany(null);
+        setCompanyName('');
+        setCompanyLogo(null);
+        setCompanyBackground(null);
+        setCompanyColor('');
+        setIsCompanyDialogOpen(true);
+    };
+
+    const openEditCompanyDialog = (company: Company) => {
+        setEditingCompany(company);
+        setCompanyName(company.name);
+        setCompanyColor(company.color || '');
+        setCompanyLogo(null);
+        setCompanyBackground(null);
+        setIsCompanyDialogOpen(true);
+    };
+
+    const handleStudentDrop = async (studentId: string, companyId: string) => {
+        if (!teacher) return;
+        const studentRef = doc(db, 'teachers', teacher.uid, 'students', studentId);
+        await updateDoc(studentRef, { companyId: companyId });
+    };
+
+    const handleRemoveStudentFromCompany = async (studentId: string) => {
+         if (!teacher) return;
+        const studentRef = doc(db, 'teachers', teacher.uid, 'students', studentId);
+        await updateDoc(studentRef, { companyId: '' }); // Or delete the field
+    }
+
+    const handleDeleteCompany = async () => {
+        if (!teacher || !companyToDelete) return;
+        setIsSaving(true);
+        try {
+            const companyRef = doc(db, 'teachers', teacher.uid, 'companies', companyToDelete);
+            
+            const studentsToUpdate = students.filter(s => s.companyId === companyToDelete);
+            const batch = writeBatch(db);
+            studentsToUpdate.forEach(student => {
+                const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                batch.update(studentRef, { companyId: '' });
+            });
+            
+            batch.delete(companyRef);
+            await batch.commit();
+
+            toast({ title: "Company Disbanded", description: "The company and its assignments have been removed." });
+        } catch (error) {
+            console.error("Error deleting company: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the company.' });
+        } finally {
+            setIsSaving(false);
+            setCompanyToDelete(null);
+        }
+    };
+    
+    const handleSaveCompany = async () => {
+        if (!teacher || !companyName.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Company name cannot be empty.' });
+            return;
+        }
+        setIsSaving(true);
+
+        try {
+            let logoUrl = editingCompany?.logoUrl || '';
+            if (companyLogo) {
+                logoUrl = await uploadFile(companyLogo, `company-logos/${teacher.uid}/${Date.now()}_${companyLogo.name}`);
+            }
+
+            let backgroundUrl = editingCompany?.backgroundUrl || '';
+             if (companyBackground) {
+                backgroundUrl = await uploadFile(companyBackground, `company-backgrounds/${teacher.uid}/${Date.now()}_${companyBackground.name}`);
+            }
+
+            await saveCompanyData(logoUrl, backgroundUrl, companyColor);
+            
+        } catch (error) {
+             console.error("Error saving company: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not save the company.' });
+            setIsSaving(false);
+        }
+    }
+
+    const uploadFile = async (file: File, path: string): Promise<string> => {
+        const storage = getStorage(app);
+        const fileRef = ref(storage, path);
+        await uploadString(fileRef, await readFileAsDataUrl(file), 'data_url');
+        return await getDownloadURL(fileRef);
+    }
+    
+    const readFileAsDataUrl = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target?.result as string);
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    const saveCompanyData = async (logoUrl: string, backgroundUrl: string, color: string) => {
+        if (!teacher) return;
+        try {
+            const companyData = { name: companyName, logoUrl, backgroundUrl, color };
+            if (editingCompany) {
+                const companyRef = doc(db, 'teachers', teacher.uid, 'companies', editingCompany.id);
+                await updateDoc(companyRef, companyData);
+                toast({ title: 'Company Updated', description: 'The company details have been saved.' });
+            } else {
+                await addDoc(collection(db, 'teachers', teacher.uid, 'companies'), {
+                    ...companyData,
+                    createdAt: serverTimestamp(),
+                });
+                toast({ title: 'Company Created', description: 'The new company is ready for members.' });
+            }
+        } finally {
+            setIsSaving(false);
+            setIsCompanyDialogOpen(false);
+            setEditingCompany(null);
+            setCompanyLogo(null);
+            setCompanyBackground(null);
+            setCompanyName('');
+            setCompanyColor('');
+        }
+    }
+
+    const handleClearCompanies = async () => {
+        if (!teacher) return;
+        setIsClearing(true);
+        try {
+            const batch = writeBatch(db);
+            students.forEach(student => {
+                if (student.companyId) {
+                    const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                    batch.update(studentRef, { companyId: '' });
+                }
+            });
+            await batch.commit();
+            toast({ title: "Companies Cleared", description: "All students have been unassigned from their companies." });
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not clear company assignments.' });
+        } finally {
+            setIsClearing(false);
+        }
+    };
+
+    const handleDistributeByClass = async () => {
+        if (!teacher || companies.length === 0) {
+            toast({ variant: 'destructive', title: 'No Companies', description: 'You must create companies before distributing students.' });
+            return;
+        }
+        setIsDistributing(true);
+        try {
+            const batch = writeBatch(db);
+            const freelancers = students.filter(s => !s.companyId && !s.isHidden);
+            const guardians = freelancers.filter(s => s.class === 'Guardian');
+            const healers = freelancers.filter(s => s.class === 'Healer');
+            const mages = freelancers.filter(s => s.class === 'Mage');
+
+            let companyIndex = 0;
+            const assign = (student: Student) => {
+                const companyId = companies[companyIndex % companies.length].id;
+                const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                batch.update(studentRef, { companyId });
+                companyIndex++;
+            };
+            
+            guardians.forEach(assign);
+            healers.forEach(assign);
+            mages.forEach(assign);
+
+            await batch.commit();
+            toast({ title: 'Students Distributed', description: 'Freelancers have been distributed into companies by class.' });
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'An error occurred while distributing students.' });
+        } finally {
+            setIsDistributing(false);
+        }
+    };
+
+    const handleMainDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        const scrollZone = 100;
+        const viewportHeight = window.innerHeight;
+
+        if (e.clientY < scrollZone) {
+            window.scrollBy(0, -15);
+        } else if (e.clientY > viewportHeight - scrollZone) {
+            window.scrollBy(0, 15);
+        }
+    };
+
+    const freelancers = students.filter(s => !s.companyId && !s.isHidden);
+    const visibleStudents = students.filter(s => !s.isHidden);
+
+
+    if (isLoading) {
+        return (
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8"><Loader2 className="mx-auto h-12 w-12 animate-spin" /></main>
+            </div>
+        )
+    }
+
+    return (
+        <>
+            <AlertDialog open={!!companyToDelete}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to delete this company?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will disband the company, and all its members will become freelancers. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setCompanyToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteCompany} className="bg-destructive hover:bg-destructive/90">
+                            Yes, Disband Company
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <div className="relative flex h-screen w-full flex-col">
+                <div 
+                    className="absolute inset-0 -z-10"
+                    style={{
+                        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fimage-gen.png?alt=media&token=c06792e9-044e-4a3a-a5d3-86aa314d6085')`,
+                        backgroundAttachment: 'fixed',
+                        backgroundPosition: 'center',
+                        backgroundSize: 'cover',
+                        opacity: 0.3,
+                    }}
+                />
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8 min-h-0 overflow-y-auto" onDragOver={handleMainDragOver}>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="space-y-1">
+                            <h1 className="text-3xl font-bold flex items-center gap-2"><Briefcase /> Company Management</h1>
+                            <p className="text-muted-foreground">Drag and drop students to assign them to companies.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button onClick={() => router.push('/teacher/dashboard')} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/> Return to Podium</Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive"><UserX className="mr-2 h-4 w-4" /> Clear All Companies</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear All Company Assignments?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will remove every student from their current company, making them all freelancers. Company rosters will be empty. Are you sure?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearCompanies} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
+                                            {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Yes, Clear All
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="secondary"><UserPlus className="mr-2 h-4 w-4" /> Distribute by Class</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Distribute Freelancers by Class?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will automatically assign all unassigned students (freelancers) to your existing companies, attempting to balance the classes in each one. Are you sure?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDistributeByClass} disabled={isDistributing}>
+                                            {isDistributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Yes, Distribute
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <Button onClick={openNewCompanyDialog}><PlusCircle className="mr-2 h-4 w-4" /> Create New Company</Button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                        <Accordion type="multiple" className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-start">
+                            {companies.map(company => (
+                                <CompanyCard
+                                    key={company.id}
+                                    company={company}
+                                    students={visibleStudents.filter(s => s.companyId === company.id)}
+                                    onEdit={openEditCompanyDialog}
+                                    onDelete={setCompanyToDelete}
+                                    onDrop={handleStudentDrop}
+                                    onRemoveStudent={handleRemoveStudentFromCompany}
+                                />
+                            ))}
+                        </Accordion>
+                        <FreelancerCard students={freelancers} onDrop={(studentId) => handleRemoveStudentFromCompany(studentId)} />
+                    </div>
+                </main>
+
+                <Dialog open={isCompanyDialogOpen} onOpenChange={setIsCompanyDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{editingCompany ? 'Edit Company' : 'Create New Company'}</DialogTitle>
+                            <DialogDescription>
+                                Enter a name for the company and optionally upload a logo and background.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="company-name">Company Name</Label>
+                                <Input id="company-name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g., The Crimson Blades" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Company Color</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {companyColors.map(color => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            className={cn("w-8 h-8 rounded-full border-2 transition-transform hover:scale-110", companyColor === color ? 'ring-2 ring-offset-2 ring-black' : 'border-gray-200')}
+                                            style={{ backgroundColor: color }}
+                                            onClick={() => setCompanyColor(color)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="company-logo">Company Logo</Label>
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="company-logo-upload" className={cn(buttonVariants({ variant: 'secondary' }), "cursor-pointer")}>
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Choose File
+                                    </Label>
+                                    <Input id="company-logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => setCompanyLogo(e.target.files ? e.target.files[0] : null)} />
+                                    {companyLogo && <p className="text-sm text-muted-foreground">{companyLogo.name}</p>}
+                                    {companyLogo && <Button variant="ghost" size="icon" onClick={() => setCompanyLogo(null)}><X className="h-4 w-4" /></Button>}
+                                </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="company-background">Company Background</Label>
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="company-background-upload" className={cn(buttonVariants({ variant: 'secondary' }), "cursor-pointer")}>
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Choose File
+                                    </Label>
+                                    <Input id="company-background-upload" type="file" accept="image/*" className="hidden" onChange={(e) => setCompanyBackground(e.target.files ? e.target.files[0] : null)} />
+                                    {companyBackground && <p className="text-sm text-muted-foreground">{companyBackground.name}</p>}
+                                    {companyBackground && <Button variant="ghost" size="icon" onClick={() => setCompanyBackground(null)}><X className="h-4 w-4" /></Button>}
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsCompanyDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleSaveCompany} disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {editingCompany ? 'Save Changes' : 'Create Company'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </>
+    );
+}

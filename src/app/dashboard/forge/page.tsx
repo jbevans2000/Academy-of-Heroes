@@ -1,0 +1,837 @@
+
+'use client';
+
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId, orderBy } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import type { Student } from '@/lib/data';
+import { type ArmorPiece, type Hairstyle, type BaseBody, type ArmorSlot } from '@/lib/forge';
+import { DashboardHeader } from '@/components/dashboard/header';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling, Orbit, Scissors, Edit, Trash2, Gem, Package } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { avatarData } from '@/lib/avatars';
+
+const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas'));
+
+const backgroundImages = [
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=e85c1eab-8d7d-489b-9660-97dd4d618143', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=c84759a6-45f6-4d70-8591-a46d89fd9445" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=6fa93f4d-d38a-4aab-9fa4-db58a783f922', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=d4a6e787-36c7-47e3-8caa-f1637bf3a6df" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=c182700f-596e-45ae-a2b1-8fd1fb76ea4b', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=7d870cf6-eb75-47d2-9c9c-d9bee26fa93e" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=8b20421b-ce00-4840-a600-8a05f7633041" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=6dc40884-e3ae-408c-9d9a-81c0fe58a146', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=0feffa03-770c-4c12-8537-58b91e72380f" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d0cbf0d6-d3c6-4cd9-914f-c586cf7a3ad2', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=5971c433-ba17-4dfa-b901-2484940463fb" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=bb41a39a-a149-4f26-9e38-0669a861f00e', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=97824d50-9adb-48e1-8cbd-4e7818770a31" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=f347764f-d604-401a-ab3e-6e06fa859fea', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=22f7def7-cd52-440e-90a5-93e8c1908692" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=988bea5a-567b-416d-b85f-0348a65e27f5', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=f66fb5de-0f44-41c3-af34-476fad6ea526" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_20_40%20AM.png?alt=media&token=0603790b-3a9e-454c-be2c-4a06f08fd2a9', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%206%2C%202025%2C%2008_20_40%20AM.png?alt=media&token=46ff93b6-6e92-431d-8247-dbb59fa0d8f3" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=89b71b1f-9561-462b-8a43-3a2ada321f4a', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=12f8c93e-1761-44ca-8812-c27b192f8720" 
+    },
+    {
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%207%2C%202025%2C%2008_49_38%20PM.png?alt=media&token=bad70011-31ff-477e-9dd3-74f78b2fc7a5',
+        thumbnailUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%207%2C%202025%2C%2008_49_38%20PM.png?alt=media&token=bd5733f6-ce97-40e6-912e-6769148ee928'
+    }
+];
+
+
+export default function ForgePage() {
+    const router = useRouter();
+    const { toast } = useToast();
+
+    // Data State
+    const [user, setUser] = useState<User | null>(null);
+    const [student, setStudent] = useState<Student | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
+    const [allHairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
+    const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
+    const [allBodies, setAllBodies] = useState<BaseBody[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSettingAvatar, setIsSettingAvatar] = useState(false);
+
+    // Dialog State
+    const [isArmoryOpen, setIsArmoryOpen] = useState(false);
+    const [isStableOpen, setIsStableOpen] = useState(false);
+    const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
+
+    // Equipment State
+    const [equipment, setEquipment] = useState({
+        bodyId: null as string | null,
+        hairstyleId: null as string | null,
+        hairstyleColor: null as string | null,
+        backgroundUrl: null as string | null,
+        headId: null as string | null,
+        shouldersId: null as string | null,
+        chestId: null as string | null,
+        handsId: null as string | null,
+        legsId: null as string | null,
+        feetId: null as string | null,
+        petId: null as string | null,
+    });
+    
+    const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl] = useState<string | null>(null);
+
+    // Sizer state
+    const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
+    const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
+    const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
+    const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
+    const [localPetTransforms, setLocalPetTransforms] = useState<Student['petTransforms']>({});
+    
+    const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
+    const [isDragging, setIsDragging] = useState(false);
+    const [isPreviewMode, setIsPreviewMode] = useState(false);
+    
+    // Collapsible Controls State
+    const [isControlsOpen, setIsControlsOpen] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                const studentMetaRef = doc(db, 'students', currentUser.uid);
+                const studentMetaSnap = await getDoc(studentMetaRef);
+                if (studentMetaSnap.exists()) {
+                    const foundTeacherUid = studentMetaSnap.data().teacherUid;
+                    setTeacherUid(foundTeacherUid);
+                } else {
+                    router.push('/dashboard');
+                }
+            } else {
+                router.push('/');
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+    
+    const fetchAllArmor = useCallback(async () => {
+        if (!teacherUid) return;
+        try {
+            const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
+            const armorSnap = await getDocs(armorQuery);
+            const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
+            setAllArmor(armorData);
+        } catch (e) {
+            console.error("Error fetching all armor:", e);
+            toast({ variant: 'destructive', title: "Error", description: "Could not load armory items." });
+        }
+    }, [teacherUid, toast]);
+
+
+    useEffect(() => {
+        if (!user || !teacherUid) return;
+
+        fetchAllArmor();
+
+        let unsubs: (()=>void)[] = [];
+        const unsubStudent = onSnapshot(doc(db, 'teachers', teacherUid, 'students', user.uid), (doc) => {
+            if (doc.exists()) {
+                const studentData = { uid: doc.id, ...doc.data() } as Student;
+                setStudent(studentData);
+                // Initialize local transforms from student data
+                setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
+                setLocalArmorTransforms(studentData.armorTransforms || {});
+                setLocalArmorTransforms2(studentData.armorTransforms2 || {});
+                setLocalPetTransforms(studentData.petTransforms || {});
+
+                // Set equipment based on saved data
+                setEquipment({
+                    bodyId: studentData.equippedBodyId || null,
+                    hairstyleId: studentData.equippedHairstyleId || null,
+                    hairstyleColor: studentData.equippedHairstyleColor || null,
+                    backgroundUrl: studentData.backgroundUrl || null,
+                    headId: studentData.equippedHeadId || null,
+                    shouldersId: studentData.equippedShouldersId || null,
+                    chestId: studentData.equippedChestId || null,
+                    handsId: studentData.equippedHandsId || null,
+                    legsId: studentData.equippedLegsId || null,
+                    feetId: studentData.equippedFeetId,
+                    petId: studentData.equippedPetId || null,
+                });
+                
+                // Determine if the last saved avatar was static or custom
+                if (studentData.avatarUrl && !studentData.useCustomAvatar) {
+                    setSelectedStaticAvatarUrl(studentData.avatarUrl);
+                } else {
+                    setSelectedStaticAvatarUrl(null);
+                }
+            }
+        });
+        unsubs.push(unsubStudent);
+        
+        const fetchHairstylesAndBodies = async () => {
+             try {
+                const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
+                unsubs.push(onSnapshot(hairQuery, (snapshot) => {
+                    setAllHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
+                }));
+                const bodiesQuery = query(collection(db, 'baseBodies'), orderBy('order'));
+                 unsubs.push(onSnapshot(bodiesQuery, (snapshot) => {
+                    setAllBodies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)));
+                }));
+
+             } catch (e) {
+                console.error("Error fetching assets:", e);
+                toast({ variant: 'destructive', title: "Error", description: "Could not load hairstyles or bodies." });
+             } finally {
+                setIsLoading(false);
+             }
+        }
+        
+        fetchHairstylesAndBodies();
+
+        return () => {
+            unsubs.forEach(unsub => unsub());
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, teacherUid, toast, fetchAllArmor]);
+
+    const ownedArmor = useMemo(() => {
+        if (student?.ownedArmorIds && allArmor.length > 0) {
+            return allArmor.filter(armor => student.ownedArmorIds?.includes(armor.id) && armor.slot !== 'Pet');
+        }
+        return [];
+    }, [student?.ownedArmorIds, allArmor]);
+
+    const ownedPets = useMemo(() => {
+        if (student?.ownedArmorIds && allArmor.length > 0) {
+            return allArmor.filter(armor => student.ownedArmorIds?.includes(armor.id) && armor.slot === 'Pet');
+        }
+        return [];
+    }, [student?.ownedArmorIds, allArmor]);
+
+
+    const handleBodySelect = (bodyId: string) => {
+        if (!student) return;
+        setEquipment(prev => ({ ...prev, bodyId }));
+        setSelectedStaticAvatarUrl(null);
+    };
+    
+    const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
+        if ('slot' in item && item.slot === 'Pet') {
+            setEquipment(prev => ({ ...prev, petId: prev.petId === item.id ? null : item.id }));
+        } else {
+            setSelectedStaticAvatarUrl(null); 
+            if ('slot' in item) { // ArmorPiece
+                const slotKey = `${'${item.slot}'}Id` as keyof typeof equipment;
+                setEquipment(prev => ({
+                    ...prev,
+                    [slotKey]: prev[slotKey] === item.id ? null : item.id
+                }));
+            } else { // Hairstyle
+                if (equipment.hairstyleId === item.id) {
+                    setEquipment(prev => ({...prev, hairstyleId: null, hairstyleColor: null}));
+                    if (activePiece?.id === item.id) setActivePiece(null);
+                } else {
+                    setEquipment(prev => ({...prev, hairstyleId: item.id, hairstyleColor: item.colors?.[0]?.imageUrl || null}));
+                }
+            }
+        }
+    };
+    
+    const hairstyle = useMemo(() => allHairstyles.find(h => h.id === equipment.hairstyleId), [allHairstyles, equipment.hairstyleId]);
+    const equippedPet = allArmor.find(p => p.id === equipment.petId);
+
+    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'rotation', value: number) => {
+        if (!activePiece) return;
+
+        const bodyId = equipment.bodyId || 'static';
+
+        const updateTransform = (prev: any) => {
+            const currentPieceTransforms = prev[activePiece.id] || {};
+            
+            const baseTransforms = 'slot' in activePiece 
+                ? (editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2)
+                : activePiece.transforms;
+                
+            const baseTransform = currentPieceTransforms[bodyId] || baseTransforms?.[bodyId] || {x:50, y:50, scale: ('slot' in activePiece ? 40 : 100), rotation: 0 };
+            
+            const newTransform = { ...baseTransform, [type]: value };
+
+            return {
+                ...prev,
+                [activePiece.id]: {
+                    ...currentPieceTransforms,
+                    [bodyId]: newTransform,
+                },
+            };
+        };
+
+        const updateHairTransform = (prev: any) => {
+            const baseTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale: 100, rotation: 0 };
+            const newTransform = { ...baseTransform, [type]: value };
+            return { ...prev, [bodyId]: newTransform };
+        };
+
+        const updatePetTransform = (prev: any) => {
+            const baseTransform = prev[bodyId] || (activePiece as ArmorPiece).transforms?.[bodyId] || {x:50, y:50, scale: 40, rotation: 0 };
+            const newTransform = { ...baseTransform, [type]: value };
+            return { ...prev, [bodyId]: newTransform };
+        };
+        
+        if (activePiece.id === equippedPet?.id) {
+            setLocalPetTransforms(updatePetTransform);
+        } else if ('slot' in activePiece) { // ArmorPiece
+             (editingLayer === 'primary' ? setLocalArmorTransforms : setLocalArmorTransforms2)(updateTransform);
+        } else { // Hairstyle
+            setLocalHairstyleTransforms(updateHairTransform);
+        }
+    };
+    
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
+        if (isPreviewMode) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+
+        setActivePiece(piece);
+        setEditingLayer(layer);
+        setIsDragging(true);
+    };
+
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging || !e.currentTarget || !activePiece || isPreviewMode) return;
+        e.preventDefault();
+        const canvasRect = e.currentTarget.getBoundingClientRect();
+        const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
+        const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
+        
+        handleSliderChange('x', newX);
+        handleSliderChange('y', newY);
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
+    const handleUnequipAll = () => {
+        setEquipment(prev => ({
+            ...prev,
+            bodyId: null,
+            hairstyleId: null, hairstyleColor: null,
+            backgroundUrl: null,
+            headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null, petId: null
+        }));
+        setSelectedStaticAvatarUrl(null);
+        setActivePiece(null);
+        toast({ title: "Appearance Cleared", description: "All armor and hairstyle have been removed."});
+    };
+
+    const handleBodyCycle = (direction: 'next' | 'prev') => {
+        if (allBodies.length === 0) return;
+        const selectableBodies = allBodies;
+        if (selectableBodies.length === 0) return;
+        
+        const currentIndex = equipment.bodyId ? selectableBodies.findIndex(b => b.id === equipment.bodyId) : -1;
+        let nextIndex;
+
+        if(currentIndex === -1) {
+            nextIndex = 0; // Start from the first one if none is selected
+        } else if (direction === 'next') {
+            nextIndex = (currentIndex + 1) % selectableBodies.length;
+        } else {
+            nextIndex = (currentIndex - 1 + selectableBodies.length) % selectableBodies.length;
+        }
+        handleBodySelect(selectableBodies[nextIndex].id);
+    };
+
+    const handleSetAvatar = async () => {
+        if (!teacherUid || !user || !student) return;
+        setIsSettingAvatar(true);
+
+        try {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+            let updates: Partial<Student> = {};
+
+            if (selectedStaticAvatarUrl) {
+                updates = {
+                    avatarUrl: selectedStaticAvatarUrl,
+                    backgroundUrl: equipment.backgroundUrl || '', 
+                    useCustomAvatar: false,
+                    equippedBodyId: '',
+                    equippedHairstyleId: '',
+                    equippedHairstyleColor: '',
+                    equippedHairstyleTransforms: {},
+                    equippedHeadId: '',
+                    equippedShouldersId: '',
+                    equippedChestId: '',
+                    equippedHandsId: '',
+                    equippedLegsId: '',
+                    equippedFeetId: '',
+                    armorTransforms: {},
+                    armorTransforms2: {},
+                    equippedPetId: equipment.petId || '',
+                    petTransforms: localPetTransforms || {},
+                };
+            } else {
+                 updates = {
+                    avatarUrl: student.avatarUrl,
+                    useCustomAvatar: true,
+                    equippedBodyId: equipment.bodyId,
+                    equippedHairstyleId: equipment.hairstyleId,
+                    equippedHairstyleColor: equipment.hairstyleColor,
+                    equippedHairstyleTransforms: localHairstyleTransforms,
+                    backgroundUrl: equipment.backgroundUrl,
+                    equippedHeadId: equipment.headId,
+                    equippedShouldersId: equipment.shouldersId,
+                    equippedChestId: equipment.chestId,
+                    equippedHandsId: equipment.handsId,
+                    equippedLegsId: equipment.legsId,
+                    equippedFeetId: equipment.feetId,
+                    armorTransforms: localArmorTransforms,
+                    armorTransforms2: localArmorTransforms2,
+                    equippedPetId: equipment.petId,
+                    petTransforms: localPetTransforms,
+                };
+            }
+            
+            await updateDoc(studentRef, updates);
+            setIsAvatarSetDialogOpen(true);
+
+        } catch (error) {
+            console.error("Error setting avatar:", error);
+            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not update your avatar preference.' });
+        } finally {
+            setIsSettingAvatar(false);
+        }
+    };
+    
+    const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
+
+    const armorBySlot = useMemo(() => {
+        const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [], Pet: [] };
+        ownedArmor.forEach(piece => {
+            if (slots[piece.slot]) {
+                slots[piece.slot].push(piece);
+            }
+        });
+        return slots;
+    }, [ownedArmor]);
+    
+    
+    const activeTransform = useMemo(() => {
+        const bodyId = equipment.bodyId || 'static'; // Use 'static' as key if no body is selected
+
+        if (!activePiece) return null;
+
+        if (activePiece.id === equippedPet?.id) {
+            return localPetTransforms?.[bodyId] || equippedPet?.transforms?.[bodyId] || { x: 50, y: 50, scale: 40, rotation: 0 };
+        }
+        
+        if ('slot' in activePiece) { // Armor
+            const transforms = editingLayer === 'primary' ? localArmorTransforms : localArmorTransforms2;
+            const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
+            return transforms?.[activePiece.id]?.[bodyId] || defaultTransforms?.[bodyId] || { x: 50, y: 50, scale: 40, rotation: 0 };
+        } else { // Hairstyle
+            if (!equipment.bodyId) return null; // Hairstyles can't be sized without a body
+            return localHairstyleTransforms?.[bodyId] || hairstyle?.transforms?.[bodyId] || { x: 50, y: 50, scale: 100, rotation: 0 };
+        }
+    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, editingLayer, hairstyle, equippedPet, localPetTransforms]);
+    
+    const handleStaticAvatarClick = (url: string) => {
+        setSelectedStaticAvatarUrl(url);
+        // Unequip all items when a static avatar is chosen, EXCEPT pet and background
+        setEquipment(prev => ({
+            ...prev,
+            bodyId: null,
+            hairstyleId: null, hairstyleColor: null,
+            headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
+        }));
+    };
+
+    const renderStaticAvatarGroups = () => {
+        if (!student) return null;
+
+        const { class: studentClass, level = 1 } = student;
+        const classAvatars = avatarData[studentClass];
+        if (!classAvatars) return <p>No avatars available for your class.</p>;
+
+        const unlockedLevels = Object.keys(classAvatars)
+            .map(Number)
+            .filter(l => l <= level)
+            .sort((a,b) => a-b);
+        
+        return unlockedLevels.map(lvl => (
+             <Collapsible key={lvl} className="w-full border-b">
+                <CollapsibleTrigger className="flex justify-between items-center w-full p-4 hover:bg-muted/50">
+                    <h3 className="text-2xl font-bold font-headline">Level {lvl} Avatars</h3>
+                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-4 p-4">
+                        {classAvatars[lvl].map((url: string, index: number) => {
+                            const isCurrentlySelected = selectedStaticAvatarUrl === url;
+                            return (
+                                <div 
+                                    key={`${'${lvl}'}-${'${index}'}`} 
+                                    className={cn(
+                                        "relative border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-105 aspect-[3/4]",
+                                        isCurrentlySelected ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
+                                    )}
+                                    onClick={() => handleStaticAvatarClick(url)}
+                                >
+                                    <Image src={url} alt={`Avatar level ${'${lvl}'} - ${'${index + 1}'}`} fill className="w-full h-full rounded-md object-cover" />
+                                     {isCurrentlySelected && (
+                                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                            <UserCheck className="h-4 w-4" />
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </CollapsibleContent>
+            </Collapsible>
+        ));
+    };
+
+    
+    if (isLoading || !student) {
+        return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
+    }
+
+    return (
+        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+             <AlertDialog open={isAvatarSetDialogOpen} onOpenChange={setIsAvatarSetDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Avatar Set!</AlertDialogTitle>
+                        <AlertDialogDescription>
+                           Your new look is now your main avatar!
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => { router.push('/dashboard') }}>
+                            Return to Dashboard
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor.filter(a => a.slot !== 'Pet')} />}
+            {student && <ArmoryDialog isOpen={isStableOpen} onOpenChange={setIsStableOpen} student={student} allArmor={allArmor.filter(a => a.slot === 'Pet')} itemType='pet' />}
+            <DashboardHeader />
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
+                 <div className="w-full max-w-7xl mx-auto space-y-4">
+                     <div className="flex justify-between items-center">
+                        <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <div className="flex gap-2">
+                             <Button onClick={() => setIsArmoryOpen(true)}>
+                                <Hammer className="mr-2 h-4 w-4"/>
+                                The Armory
+                             </Button>
+                             <Button onClick={() => setIsStableOpen(true)}>
+                                <Gem className="mr-2 h-4 w-4"/>
+                                The Stable
+                             </Button>
+                             <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
+                            <Button variant="default" onClick={handleSetAvatar} disabled={isSettingAvatar || (!selectedStaticAvatarUrl && !equipment.bodyId && !equipment.petId)}>
+                                {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
+                                Set as Custom Avatar
+                            </Button>
+                        </div>
+                    </div>
+
+                    <Alert variant="destructive" className="bg-yellow-100/90 border-yellow-500 text-yellow-900 dark:bg-yellow-900/80 dark:text-yellow-100">
+                        <Hammer className="h-5 w-5 !text-yellow-900 dark:!text-yellow-100" />
+                        <AlertTitle className="font-bold">Message from the Blacksmiths!</AlertTitle>
+                        <AlertDescription>
+                            The Dwarven Blacksmiths are still working on The Forge! The 2D customizable images are still under construction, but the Static Avatar Images, Backgrounds, and Pet Images are all up and running! Please select a STATIC Avatar Image from the bottom of this page to ensure a proper look!
+                        </AlertDescription>
+                    </Alert>
+
+                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        <div className="lg:col-span-3 flex flex-col gap-6">
+                            <Card className="h-auto flex flex-col">
+                                <CardHeader>
+                                    <CardTitle>The Forge</CardTitle>
+                                    <CardDescription>Select your equipment.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-grow overflow-hidden">
+                                    <Tabs defaultValue="body" className="w-full h-full flex flex-col">
+                                        <TabsList className="grid w-full grid-cols-4">
+                                            <TabsTrigger value="body">Body</TabsTrigger>
+                                            <TabsTrigger value="hair">Hair</TabsTrigger>
+                                            <TabsTrigger value="hair-color" disabled={!equipment.hairstyleId}>Color</TabsTrigger>
+                                            <TabsTrigger value="armor">Armor</TabsTrigger>
+                                        </TabsList>
+                                        <div className="flex-grow mt-4">
+                                            <TabsContent value="body" className="p-1">
+                                                {allBodies && allBodies.length > 0 ? (
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {allBodies.map(item => (
+                                                            <Card 
+                                                                key={item.id} 
+                                                                className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
+                                                                onClick={() => handleBodySelect(item.id)} >
+                                                                <CardContent className="p-1 aspect-square">
+                                                                    <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                </CardContent>
+                                                            </Card>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No base bodies found.</p>}
+                                            </TabsContent>
+                                            <TabsContent value="hair" className="p-1">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {allHairstyles.map(item => (
+                                                        <Card 
+                                                            key={item.id} 
+                                                            className={cn( "cursor-pointer hover:border-primary", equipment.hairstyleId === item.id && "border-2 border-primary" )}
+                                                            onClick={() => handleEquipItem(item)}
+                                                        >
+                                                            <CardContent className="p-1 aspect-square">
+                                                                <Image src={item.thumbnailUrl || item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
+                                                </div>
+                                            </TabsContent>
+                                            <TabsContent value="hair-color" className="p-1">
+                                                {allHairstyles.find(h => h.id === equipment.hairstyleId) && (
+                                                    <div className="grid grid-cols-5 gap-2">
+                                                        {allHairstyles.find(h => h.id === equipment.hairstyleId)!.colors.map((color, index) => (
+                                                            <div 
+                                                                key={index} 
+                                                                className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", equipment.hairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                                                                onClick={() => setEquipment(prev => ({...prev, hairstyleColor: color.imageUrl}))} >
+                                                                <Image src={color.thumbnailUrl || color.imageUrl} alt={`Color ${'${index+1}'}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TabsContent>
+                                            <TabsContent value="armor" className="p-1">
+                                                <ScrollArea className="h-[55vh] pr-2">
+                                                    <div className="space-y-4">
+                                                        {armorSlotOrder.map(slot => (
+                                                            <div key={slot}>
+                                                                <h4 className="capitalize font-semibold mb-2 text-center border-b pb-1">{slot}</h4>
+                                                                <div className="grid grid-cols-3 gap-2">
+                                                                    {armorBySlot[slot].length === 0 ? (
+                                                                        <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned.</p>
+                                                                    ) : (
+                                                                        armorBySlot[slot].map(item => {
+                                                                            const slotKey = `${'${item.slot}'}Id` as keyof typeof equipment;
+                                                                            const isEquipped = equipment[slotKey] === item.id;
+                                                                            return (
+                                                                                <Card 
+                                                                                    key={item.id} 
+                                                                                    className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
+                                                                                    onClick={() => handleEquipItem(item)} >
+                                                                                    <CardContent className="p-1 aspect-square">
+                                                                                        <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                                    </CardContent>
+                                                                                </Card>
+                                                                            )
+                                                                        })
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </ScrollArea>
+                                            </TabsContent>
+                                        </div>
+                                    </Tabs>
+                                </CardContent>
+                            </Card>
+                             <div className="grid grid-cols-1 gap-6">
+                                <Card>
+                                    <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-3 gap-2">
+                                        {backgroundImages.map((bg, index) => (
+                                            <div key={index} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.backgroundUrl === bg.imageUrl && "border-primary ring-2 ring-primary")} onClick={() => setEquipment(prev => ({...prev, backgroundUrl: bg.imageUrl}))}>
+                                                <Image src={bg.thumbnailUrl} alt="Background" width={150} height={100} className="w-full h-auto object-cover rounded-sm" />
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>My Pets</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-3 gap-2">
+                                        {ownedPets.length > 0 ? ownedPets.map(pet => (
+                                            <div key={pet.id} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.petId === pet.id && "border-primary ring-2 ring-primary")} onClick={() => handleEquipItem(pet)}>
+                                                <Image src={pet.thumbnailUrl || pet.imageUrl} alt={pet.name} width={100} height={100} className="w-full h-auto object-contain rounded-sm bg-secondary" />
+                                            </div>
+                                        )) : <p className="text-muted-foreground text-sm col-span-3 text-center py-2">Visit The Stable to purchase pets.</p>}
+                                    </CardContent>
+                                </Card>
+                             </div>
+                        </div>
+                        
+                        <div className="lg:col-span-9 relative" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                           <div
+                                className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
+                                onMouseMove={handleMouseMove}
+                            >
+                                <Suspense fallback={<div className="w-full h-full bg-gray-200 animate-pulse" />}>
+                                     <CharacterCanvas 
+                                        student={student}
+                                        allBodies={allBodies}
+                                        equipment={equipment}
+                                        allHairstyles={allHairstyles}
+                                        allArmor={allArmor}
+                                        equippedPet={equippedPet}
+                                        onMouseDown={handleMouseDown}
+                                        activePieceId={activePiece?.id || null}
+                                        editingLayer={editingLayer}
+                                        isPreviewMode={isPreviewMode}
+                                        localHairstyleTransforms={localHairstyleTransforms}
+                                        localArmorTransforms={localArmorTransforms}
+                                        localArmorTransforms2={localArmorTransforms2}
+                                        localPetTransforms={localPetTransforms}
+                                        selectedStaticAvatarUrl={selectedStaticAvatarUrl}
+                                    />
+                                </Suspense>
+
+                                <div className="absolute top-0 right-0 h-full p-2 z-20">
+                                    <Collapsible
+                                        open={isControlsOpen}
+                                        onOpenChange={setIsControlsOpen}
+                                        className="relative h-full"
+                                    >
+                                        <CollapsibleTrigger asChild>
+                                            <Button variant="secondary" size="icon" className="absolute top-0 -left-12">
+                                                {isControlsOpen ? <ChevronsRight /> : <ChevronsLeft />}
+                                            </Button>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent asChild>
+                                            <Card className="w-64 h-full bg-background/80 backdrop-blur-sm flex flex-col">
+                                                <CardHeader>
+                                                    <CardTitle>Controls</CardTitle>
+                                                    <div className="flex items-center space-x-2 pt-2">
+                                                        <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
+                                                        <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
+                                                    </div>
+                                                </CardHeader>
+                                                <ScrollArea className="flex-grow">
+                                                    <CardContent className="space-y-4">
+                                                        <div className="space-y-1">
+                                                          <p className="text-sm text-muted-foreground">Click a piece on the canvas to select it for editing.</p>
+                                                        </div>
+                                                        {activePiece ? (
+                                                            <div className="space-y-4">
+                                                                <p className="font-bold text-center">Editing: <span className="text-primary">{('styleName' in activePiece ? activePiece.styleName : activePiece.name)}</span></p>
+                                                                {('slot' in activePiece && activePiece.modularImageUrl2) && (
+                                                                    <div className="space-y-2 p-2 border rounded-md">
+                                                                        <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
+                                                                            <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {activeTransform && (
+                                                                    <div className="space-y-4 animate-in fade-in-50">
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                                            <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                                            <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="scale">Scale: {activeTransform.scale.toFixed(1)}%</Label>
+                                                                            <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={150} step={0.5} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="rotation">Rotation: {activeTransform.rotation || 0}°</Label>
+                                                                            <Slider id="rotation" value={[activeTransform.rotation || 0]} onValueChange={([val]) => handleSliderChange('rotation', val)} min={-180} max={180} step={1} disabled={isPreviewMode} />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-muted-foreground text-center">Select an equipped piece to see its controls.</p>
+                                                        )}
+                                                    </CardContent>
+                                                </ScrollArea>
+                                            </Card>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                </div>
+                           </div>
+                           {equipment.bodyId && (
+                                <div className="flex justify-between items-center w-full max-w-sm mt-2 mx-auto">
+                                    <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
+                                    <span className="font-semibold">{allBodies.find(b => b.id === equipment.bodyId)?.name || 'Body Type'}</span>
+                                    <Button variant="outline" onClick={() => handleBodyCycle('next')}>
+                                        <ArrowRight className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                     </div>
+                     <div className="mt-8">
+                         <Card>
+                             <CardHeader>
+                                 <CardTitle>Or, Choose from a Pre-Made Avatar You Have Unlocked!</CardTitle>
+                                 <CardDescription>Select one of your unlocked static avatars. This will unequip any custom items.</CardDescription>
+                             </CardHeader>
+                             <CardContent>
+                                {renderStaticAvatarGroups()}
+                             </CardContent>
+                         </Card>
+                     </div>
+                 </div>
+            </main>
+        </div>
+    );
+}
