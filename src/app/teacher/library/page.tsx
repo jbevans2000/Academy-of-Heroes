@@ -66,7 +66,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
     const [isSharing, setIsSharing] = useState(false);
 
     const alreadySharedHubIds = useMemo(() => {
-        return allLibraryHubs.map(hub => hub.originalHubId);
+        return new Set(allLibraryHubs.map(hub => hub.originalHubId));
     }, [allLibraryHubs]);
 
     const handleShare = async () => {
@@ -111,7 +111,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
                         <Label className="font-bold">Select Hubs to Share</Label>
                         <div className="max-h-48 overflow-y-auto space-y-2 rounded-md border p-2">
                             {hubs.map(hub => {
-                                const isShared = alreadySharedHubIds.includes(hub.id);
+                                const isShared = alreadySharedHubIds.has(hub.id);
                                 return (
                                 <div key={hub.id} className="flex items-center space-x-2">
                                     <Checkbox
@@ -422,19 +422,21 @@ export default function RoyalLibraryPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {filteredHubs.map(hub => (
                                         <Card key={hub.id} className="flex flex-col bg-card/90 relative">
-                                            <div className="absolute top-4 right-4">
-                                                <button onClick={() => handleCreatorClick(hub)}>
-                                                    <Avatar>
-                                                        <AvatarImage src={hub.originalTeacherAvatarUrl} alt={hub.originalTeacherName} />
-                                                        <AvatarFallback>{hub.originalTeacherName?.charAt(0) || '?'}</AvatarFallback>
-                                                    </Avatar>
-                                                </button>
-                                            </div>
                                             <CardHeader>
-                                                <CardTitle>{hub.name}</CardTitle>
-                                                <CardDescription>
-                                                    By <button onClick={() => handleCreatorClick(hub)} className="font-semibold underline hover:text-primary">{hub.originalTeacherName}</button>
-                                                </CardDescription>
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <CardTitle>{hub.name}</CardTitle>
+                                                        <CardDescription>
+                                                            By <button onClick={() => handleCreatorClick(hub)} className="font-semibold underline hover:text-primary">{hub.originalTeacherName}</button>
+                                                        </CardDescription>
+                                                    </div>
+                                                    <button onClick={() => handleCreatorClick(hub)}>
+                                                        <Avatar className="h-12 w-12">
+                                                            <AvatarImage src={hub.originalTeacherAvatarUrl} alt={hub.originalTeacherName} />
+                                                            <AvatarFallback>{hub.originalTeacherName?.charAt(0) || '?'}</AvatarFallback>
+                                                        </Avatar>
+                                                    </button>
+                                                </div>
                                                 <div className="flex flex-wrap gap-2 pt-2">
                                                     <Badge>{hub.gradeLevel}</Badge>
                                                     <Badge variant="secondary">{hub.subject}</Badge>
