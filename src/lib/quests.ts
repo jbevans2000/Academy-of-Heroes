@@ -90,3 +90,26 @@ export interface QuestCompletionRequest {
     quizScore?: number;
     quizAnswers?: { question: string; studentAnswer: string; correctAnswer: string; isCorrect: boolean }[];
 }
+
+
+// --- ROYAL LIBRARY TYPES ---
+
+export interface LibraryHub extends Omit<QuestHub, 'id'> {
+    originalHubId: string;
+    originalTeacherId: string;
+    originalTeacherName: string;
+    subject: string;
+    gradeLevel: string;
+    tags: string[];
+    sagaType: 'standalone' | 'ongoing';
+    description: string;
+    importCount: number;
+    createdAt: any; // Firestore ServerTimestamp
+}
+
+export interface LibraryChapter extends Omit<Chapter, 'id'> {
+    libraryHubId: string; // The ID of the document in the `library_hubs` collection
+    originalChapterId: string;
+    originalTeacherId: string;
+    createdAt: any; // Firestore ServerTimestamp
+}

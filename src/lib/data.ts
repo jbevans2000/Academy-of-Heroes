@@ -30,6 +30,8 @@ export type Teacher = {
     lastSeenBroadcastTimestamp?: any;
     isChatEnabled?: boolean;
     isCompanyChatActive?: boolean;
+    bio?: string; // For Royal Library
+    subjectsTaught?: string[]; // For Royal Library
 }
 
 export type Student = {
