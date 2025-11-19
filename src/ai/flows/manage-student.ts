@@ -15,7 +15,7 @@
  */
 import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getAdminDb } from '@/lib/firebaseAdmin';
+import { getAdminAuth, getAdminDb } from '@/lib/firebaseAdmin';
 
 
 interface ActionResponse {
@@ -44,6 +44,31 @@ export async function updateStudentDetails(input: UpdateDetailsInput): Promise<A
     return { success: false, error: e.message || 'Failed to update student details in Firestore.' };
   }
 }
+
+interface ResetPasswordInput {
+  studentUid: string;
+  newPassword: string;
+}
+
+export async function resetStudentPassword(input: ResetPasswordInput): Promise<ActionResponse> {
+    if (input.newPassword.length < 6) {
+        return { success: false, error: 'Password must be at least 6 characters long.' };
+    }
+    try {
+        const adminAuth = getAdminAuth();
+        await adminAuth.updateUser(input.studentUid, {
+            password: input.newPassword,
+        });
+        return { success: true, message: "Password has been successfully reset." };
+    } catch (e: any) {
+        console.error("Error in resetStudentPassword:", e);
+        if (e.code === 'auth/user-not-found') {
+            return { success: false, error: 'Student authentication account not found.' };
+        }
+        return { success: false, error: e.message || 'Failed to reset password in Firebase Auth.' };
+    }
+}
+
 
 interface UpdateNotesInput {
   teacherUid: string;

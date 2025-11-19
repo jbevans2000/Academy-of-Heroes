@@ -49,10 +49,6 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
   // Password Reset State
   const [newPassword, setNewPassword] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-
-  // Ban/Unban/Delete State
-  const [isModerating, setIsModerating] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   
   useEffect(() => {
     // Reset state when a new student is selected
@@ -117,34 +113,6 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
         setIsResettingPassword(false);
     }
   }
-  
-  const handleModerateStudent = async (action: 'delete') => {
-      setIsModerating(true);
-      try {
-          const result = await StudentManager.moderateStudent({
-              teacherUid,
-              studentUid: student.uid,
-              action,
-          });
-          
-          if (result.success) {
-              toast({ title: result.message });
-              onOpenChange(false); // Close dialog on success
-              if (action === 'delete') {
-                  setStudents(prev => prev.filter(s => s.uid !== student.uid));
-              }
-          } else {
-              throw new Error(result.error);
-          }
-      } catch (error: any) {
-          console.error(error);
-          toast({ variant: 'destructive', title: 'Action Failed', description: error.message });
-      } finally {
-          setIsModerating(false);
-          setIsDeleteConfirmOpen(false);
-      }
-  }
-
 
   return (
     <>
@@ -157,10 +125,9 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
             </DialogDescription>
           </DialogHeader>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="status">Status</TabsTrigger>
             </TabsList>
             <TabsContent value="details" className="pt-4">
               <div className="space-y-4">
@@ -215,31 +182,9 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
                     </Button>
                 </DialogFooter>
             </TabsContent>
-            <TabsContent value="status" className="pt-4">
-                <div className="space-y-4">
-                    <Button onClick={() => setIsDeleteConfirmOpen(true)} variant="destructive" className="w-full">
-                        <Trash2 className="mr-2 h-4 w-4" /> Permanently Delete Student
-                    </Button>
-                </div>
-            </TabsContent>
           </Tabs>
         </DialogContent>
       </Dialog>
-      
-      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Permanently Delete {student.characterName}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. All of this student's data, including their character, progress, and authentication record, will be permanently deleted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleModerateStudent('delete')} className="bg-destructive hover:bg-destructive/90">Yes, Permanently Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
