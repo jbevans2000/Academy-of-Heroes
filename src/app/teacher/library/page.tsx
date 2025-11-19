@@ -17,12 +17,13 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, BookOpen, Search, Star, Share, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Search, Star, Share, Trash2, Loader2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CreatorProfileDialog } from '@/components/teacher/creator-profile-dialog';
 import Link from 'next/link';
 import { unshareHubFromLibrary, shareHubsToLibrary } from '@/ai/flows/share-to-library';
+import { importHub } from '@/ai/flows/import-from-library';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,6 +76,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
     const [description, setDescription] = useState('');
     const [isSharing, setIsSharing] = useState(false);
     const [selectedSaga, setSelectedSaga] = useState('');
+    const [contentToShare, setContentToShare] = useState<'both' | 'story' | 'lesson'>('both');
 
     const alreadySharedHubIds = useMemo(() => {
         return new Set(allLibraryHubs.map(hub => hub.originalHubId));
@@ -100,6 +102,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                 sagaType,
                 description,
                 sagaName: sagaType === 'ongoing' ? selectedSaga : '',
+                contentToShare,
             });
 
             if (result.success) {
@@ -124,6 +127,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
             setSagaType('standalone');
             setDescription('');
             setSelectedSaga('');
+            setContentToShare('both');
         }
     }, [isOpen]);
 
@@ -230,6 +234,23 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                         </div>
                     </div>
                      <div className="space-y-2">
+                        <Label>Content to Share</Label>
+                        <RadioGroup value={contentToShare} onValueChange={(v) => setContentToShare(v as any)} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="both" id="share-both" />
+                                <Label htmlFor="share-both">Story & Lesson</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="story" id="share-story" />
+                                <Label htmlFor="share-story">Story Only</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="lesson" id="share-lesson" />
+                                <Label htmlFor="share-lesson">Lesson Only</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                     <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
                         <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Briefly describe what this quest hub is about." />
                     </div>
@@ -254,6 +275,7 @@ export default function RoyalLibraryPage() {
     const [hubs, setHubs] = useState<LibraryHub[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [isImporting, setIsImporting] = useState<string | null>(null);
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -382,6 +404,26 @@ export default function RoyalLibraryPage() {
             setHubToDelete(null);
         }
     };
+    
+    const handleImportHub = async (libraryHubId: string) => {
+        if (!teacher) return;
+        setIsImporting(libraryHubId);
+        try {
+            const result = await importHub({ teacherUid: teacher.uid, libraryHubId });
+            if (result.success) {
+                toast({
+                    title: "Import Successful!",
+                    description: `"${result.hubName}" has been added to your Quest Archives.`
+                });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Import Failed', description: error.message });
+        } finally {
+            setIsImporting(null);
+        }
+    };
 
     let lastSagaName: string | undefined = '';
 
@@ -504,7 +546,7 @@ export default function RoyalLibraryPage() {
                                         return (
                                         <React.Fragment key={hub.id}>
                                             {showSagaHeader && (
-                                                <div className="p-3 bg-primary/80 backdrop-blur-sm text-primary-foreground rounded-lg border-l-4 border-primary">
+                                                <div className="p-3 bg-primary/80 text-primary-foreground backdrop-blur-sm rounded-lg border-l-4 border-primary">
                                                     <h2 className="text-2xl font-bold font-headline">{hub.sagaName}</h2>
                                                     <p className="text-sm">A multi-part saga by {hub.originalTeacherName}</p>
                                                 </div>
@@ -539,16 +581,25 @@ export default function RoyalLibraryPage() {
                                                 <CardContent className="flex-grow">
                                                     <p className="text-sm text-muted-foreground">{hub.description}</p>
                                                 </CardContent>
-                                                <CardFooter className="flex justify-end gap-2">
-                                                    {teacher?.uid === hub.originalTeacherId && (
-                                                        <Button variant="destructive" size="sm" onClick={() => setHubToDelete(hub)} disabled={isDeleting === hub.id}>
-                                                            {isDeleting === hub.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                                                <CardFooter className="flex justify-between items-center">
+                                                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                                        <Download className="h-4 w-4" />
+                                                        <span>Imported {hub.importCount} time(s)</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {teacher?.uid === hub.originalTeacherId && (
+                                                            <Button variant="destructive" size="sm" onClick={() => setHubToDelete(hub)} disabled={isDeleting === hub.id}>
+                                                                {isDeleting === hub.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                                                            </Button>
+                                                        )}
+                                                        <Button asChild variant="outline">
+                                                            <Link href={`/teacher/library/preview/${hub.id}`}>Preview</Link>
                                                         </Button>
-                                                    )}
-                                                    <Button asChild variant="outline">
-                                                        <Link href={`/teacher/library/preview/${hub.id}`}>Preview</Link>
-                                                    </Button>
-                                                    <Button disabled>Import</Button>
+                                                        <Button onClick={() => handleImportHub(hub.id)} disabled={isImporting === hub.id}>
+                                                            {isImporting === hub.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                                            Import
+                                                        </Button>
+                                                    </div>
                                                 </CardFooter>
                                             </Card>
                                         </React.Fragment>
