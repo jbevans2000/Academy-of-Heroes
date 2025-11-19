@@ -103,6 +103,7 @@ export interface LibraryHub extends Omit<QuestHub, 'id'> {
     gradeLevel: string;
     tags: string[];
     sagaType: 'standalone' | 'ongoing';
+    sagaName?: string; // New field
     description: string;
     importCount: number;
     createdAt: any; // Firestore ServerTimestamp

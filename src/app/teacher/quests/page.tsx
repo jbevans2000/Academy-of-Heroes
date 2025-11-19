@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen, Share } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
@@ -46,13 +46,14 @@ interface ShareDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   hubs: QuestHub[];
-  allLibraryHubs: LibraryHub[]; // Now accepts all library hubs
+  allLibraryHubs: LibraryHub[];
   teacher: User | null;
+  teacherSagas: string[];
 }
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
-function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: ShareDialogProps) {
+function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teacherSagas }: ShareDialogProps) {
     const { toast } = useToast();
     const [selectedHubIds, setSelectedHubIds] = useState<string[]>([]);
     const [subject, setSubject] = useState('');
@@ -61,8 +62,8 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
     const [sagaType, setSagaType] = useState<'standalone' | 'ongoing'>('standalone');
     const [description, setDescription] = useState('');
     const [isSharing, setIsSharing] = useState(false);
+    const [selectedSaga, setSelectedSaga] = useState('');
 
-    // Correctly create a set of already shared hub IDs
     const alreadySharedHubIds = useMemo(() => {
         return new Set(allLibraryHubs.map(hub => hub.originalHubId));
     }, [allLibraryHubs]);
@@ -70,6 +71,10 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
     const handleShare = async () => {
         if (!teacher || selectedHubIds.length === 0 || !subject || !gradeLevel) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select at least one hub and fill out all required fields.' });
+            return;
+        }
+        if (sagaType === 'ongoing' && !selectedSaga) {
+            toast({ variant: 'destructive', title: 'Saga Not Selected', description: 'Please select a saga for your ongoing series.' });
             return;
         }
         setIsSharing(true);
@@ -82,6 +87,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
                 tags: tags.split(',').map(t => t.trim()).filter(Boolean),
                 sagaType,
                 description,
+                sagaName: sagaType === 'ongoing' ? selectedSaga : '',
             });
 
             if (result.success) {
@@ -96,6 +102,19 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
             setIsSharing(false);
         }
     };
+    
+    // Reset local state when dialog opens/closes
+    useEffect(() => {
+        if (!isOpen) {
+            setSelectedHubIds([]);
+            setSubject('');
+            setGradeLevel('');
+            setTags('');
+            setSagaType('standalone');
+            setDescription('');
+            setSelectedSaga('');
+        }
+    }, [isOpen]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -147,16 +166,32 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
                     </div>
                      <div className="space-y-2">
                         <Label>Saga Type</Label>
-                         <RadioGroup value={sagaType} onValueChange={(v) => setSagaType(v as any)} className="flex gap-4">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="standalone" id="standalone" />
-                                <Label htmlFor="standalone">Standalone Hub</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="ongoing" id="ongoing" />
-                                <Label htmlFor="ongoing">Ongoing Saga</Label>
-                            </div>
-                        </RadioGroup>
+                         <div className="flex gap-4 items-center">
+                            <RadioGroup value={sagaType} onValueChange={(v) => setSagaType(v as any)} className="flex gap-4">
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="standalone" id="standalone" />
+                                    <Label htmlFor="standalone">Standalone Hub</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="ongoing" id="ongoing" />
+                                    <Label htmlFor="ongoing">Ongoing Saga</Label>
+                                </div>
+                            </RadioGroup>
+                             {sagaType === 'ongoing' && (
+                                 <Select value={selectedSaga} onValueChange={setSelectedSaga} disabled={teacherSagas.length === 0}>
+                                    <SelectTrigger className="w-[250px]">
+                                        <SelectValue placeholder="Select a Saga Name..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {teacherSagas.length > 0 ? (
+                                            teacherSagas.map(saga => <SelectItem key={saga} value={saga}>{saga}</SelectItem>)
+                                        ) : (
+                                            <SelectItem value="none" disabled>No sagas defined in your profile.</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
@@ -184,6 +219,7 @@ export default function QuestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [teacher, setTeacher] = useState<User | null>(null);
+  const [teacherData, setTeacherData] = useState<{sagas?: string[]}>({});
   
   // State for world map dialog
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
@@ -199,7 +235,7 @@ export default function QuestsPage() {
 
   // State for sharing
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [allLibraryHubs, setAllLibraryHubs] = useState<LibraryHub[]>([]); // New state
+  const [allLibraryHubs, setAllLibraryHubs] = useState<LibraryHub[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -220,7 +256,7 @@ export default function QuestsPage() {
     const chaptersRef = collection(db, 'teachers', teacher.uid, 'chapters');
     const teacherRef = doc(db, 'teachers', teacher.uid);
     const companiesRef = collection(db, 'teachers', teacher.uid, 'companies');
-    const libraryHubsRef = collection(db, 'library_hubs'); // Fetch all library hubs
+    const libraryHubsRef = collection(db, 'library_hubs'); 
 
     const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
         const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
@@ -234,7 +270,9 @@ export default function QuestsPage() {
     
     const unsubTeacher = onSnapshot(teacherRef, (docSnap) => {
         if (docSnap.exists()) {
-            setWorldMapUrl(docSnap.data().worldMapUrl || '');
+            const data = docSnap.data();
+            setTeacherData(data); // Store all teacher data
+            setWorldMapUrl(data.worldMapUrl || '');
         }
     });
 
@@ -264,6 +302,10 @@ export default function QuestsPage() {
 
             if (aIsSideQuest && !bIsSideQuest) return -1;
             if (!aIsSideQuest && bIsSideQuest) return 1;
+            
+            if(aIsSideQuest && bIsSideQuest) {
+                return a.name.localeCompare(b.name);
+            }
 
             return a.hubOrder - b.hubOrder;
         });
@@ -368,7 +410,7 @@ export default function QuestsPage() {
 
   return (
     <>
-      <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={sortedHubs} allLibraryHubs={allLibraryHubs} teacher={teacher} />
+      <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={sortedHubs} allLibraryHubs={allLibraryHubs} teacher={teacher} teacherSagas={teacherData?.sagas || []}/>
       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -402,7 +444,27 @@ export default function QuestsPage() {
               </div>
             )}
           </div>
-          <DialogFooter className="sm:justify-end">
+          <DialogFooter className="sm:justify-between">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isReverting}>
+                        {isReverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Revert to Default Map
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove your custom world map and revert to the default image.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRevertToDefault}>Yes, Revert</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setIsMapDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleWorldMapUpload} disabled={!mapImageFile || isUploadingMap}>
@@ -462,35 +524,17 @@ export default function QuestsPage() {
                 <ImageIcon className="mr-2 h-5 w-5" />
                 Set World Map
             </Button>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isReverting}>
-                        {isReverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Revert to Default Map
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will remove your custom world map and revert to the default image. Your hub positions will be kept.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleRevertToDefault} className="bg-destructive hover:bg-destructive/90">
-                            Yes, Revert
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-             <Button onClick={() => setIsShareDialogOpen(true)}>
-              <Share className="mr-2 h-5 w-5" />
-              Share to Library
+            <Button variant="secondary" onClick={() => router.push('/teacher/library')}>
+                <BookOpen className="mr-2 h-5 w-5" />
+                Royal Library
             </Button>
-            <Button onClick={() => router.push('/teacher/quests/new?hubOnly=true')}>
+            <Button onClick={() => setIsShareDialogOpen(true)}>
+              <Share className="mr-2 h-5 w-5" />
+              Share Your Quests
+            </Button>
+            <Button onClick={() => router.push('/teacher/quests/new')}>
               <PlusCircle className="mr-2 h-5 w-5" />
-              Create New Hub
+              Create New Quest
             </Button>
           </div>
         </div>
@@ -504,9 +548,9 @@ export default function QuestsPage() {
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 py-20 text-center">
                 <h2 className="text-xl font-semibold text-muted-foreground">No Quests Created Yet</h2>
                 <p className="mt-2 text-sm text-muted-foreground">This area will show a list of all the quests and chapters you have created.</p>
-                <Button onClick={() => router.push('/teacher/quests/new?hubOnly=true')} className="mt-4">
+                <Button onClick={() => router.push('/teacher/quests/new')} className="mt-4">
                 <PlusCircle className="mr-2 h-5 w-5" />
-                Create Your First Hub
+                Create Your First Quest
                 </Button>
             </div>
         ) : (
@@ -609,4 +653,159 @@ export default function QuestsPage() {
     </div>
     </>
   );
+}
+
+```
+- src/ai/flows/share-to-library.ts
+<content><![CDATA[
+'use server';
+
+import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { QuestHub, Chapter, LibraryHub, LibraryChapter } from '@/lib/quests';
+
+interface ShareHubsInput {
+    teacherUid: string;
+    hubIds: string[];
+    subject: string;
+    gradeLevel: string;
+    tags: string[];
+    sagaType: 'standalone' | 'ongoing';
+    description: string;
+    sagaName?: string; // New field
+}
+
+interface ShareHubsResponse {
+    success: boolean;
+    sharedCount?: number;
+    error?: string;
+}
+
+export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHubsResponse> {
+    const { teacherUid, hubIds, subject, gradeLevel, tags, sagaType, description, sagaName } = input;
+    if (!teacherUid || hubIds.length === 0) {
+        return { success: false, error: "Invalid input." };
+    }
+    
+    let sharedCount = 0;
+
+    try {
+        const batch = writeBatch(db);
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        const teacherData = teacherSnap.exists() ? teacherSnap.data() : null;
+        const teacherName = teacherData?.name || 'Anonymous Teacher';
+        const teacherAvatar = teacherData?.avatarUrl || '';
+
+        for (const hubId of hubIds) {
+            const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+            const hubSnap = await getDoc(hubRef);
+            if (!hubSnap.exists()) continue;
+
+            const hubData = hubSnap.data() as QuestHub;
+
+            // 1. Create Library Hub document
+            const newLibraryHubRef = doc(collection(db, 'library_hubs'));
+            const libraryHubData: Omit<LibraryHub, 'id'> = {
+                originalHubId: hubId,
+                originalTeacherId: teacherUid,
+                originalTeacherName: teacherName,
+                originalTeacherAvatarUrl: teacherAvatar,
+                name: hubData.name,
+                worldMapUrl: hubData.worldMapUrl,
+                coordinates: { x: 50, y: 50 }, // Use default coordinates for library view
+                hubOrder: 0, // Not relevant for library
+                storySummary: '', // Can be generated later
+                subject,
+                gradeLevel,
+                tags,
+                sagaType,
+                sagaName: sagaType === 'ongoing' ? sagaName : '', // Add saga name if applicable
+                description,
+                importCount: 0,
+                createdAt: serverTimestamp(),
+            };
+            batch.set(newLibraryHubRef, libraryHubData);
+
+            // 2. Find and copy all chapters for this hub
+            const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
+            const chaptersSnapshot = await getDocs(chaptersQuery);
+
+            for (const chapterDoc of chaptersSnapshot.docs) {
+                const chapterData = chapterDoc.data() as Chapter;
+                const newLibraryChapterRef = doc(collection(db, 'library_chapters'));
+                
+                const libraryChapterData: Omit<LibraryChapter, 'id'> = {
+                    ...chapterData,
+                    libraryHubId: newLibraryHubRef.id,
+                    originalChapterId: chapterDoc.id,
+                    originalTeacherId: teacherUid,
+                    createdAt: serverTimestamp(),
+                };
+                batch.set(newLibraryChapterRef, libraryChapterData);
+            }
+            sharedCount++;
+        }
+        
+        await batch.commit();
+
+        return { success: true, sharedCount };
+
+    } catch (error: any) {
+        console.error("Error sharing hubs to library:", error);
+        return { success: false, error: error.message || "An unknown error occurred while sharing." };
+    }
+}
+
+
+interface UnshareHubInput {
+    teacherUid: string;
+    hubId: string; // This is the ID of the document in `library_hubs`
+}
+
+interface UnshareHubResponse {
+    success: boolean;
+    error?: string;
+}
+
+export async function unshareHubFromLibrary(input: UnshareHubInput): Promise<UnshareHubResponse> {
+    const { teacherUid, hubId } = input;
+    if (!teacherUid || !hubId) {
+        return { success: false, error: "Invalid input provided." };
+    }
+    
+    try {
+        const hubRef = doc(db, 'library_hubs', hubId);
+        const hubSnap = await getDoc(hubRef);
+
+        if (!hubSnap.exists()) {
+            return { success: false, error: "The shared hub could not be found." };
+        }
+
+        const hubData = hubSnap.data() as LibraryHub;
+        if (hubData.originalTeacherId !== teacherUid) {
+            return { success: false, error: "You are not authorized to delete this hub." };
+        }
+
+        const batch = writeBatch(db);
+
+        // Find and delete all associated chapters in the library
+        const chaptersQuery = query(collection(db, 'library_chapters'), where('libraryHubId', '==', hubId));
+        const chaptersSnapshot = await getDocs(chaptersQuery);
+
+        chaptersSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        // Delete the main library hub document
+        batch.delete(hubRef);
+
+        await batch.commit();
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error unsharing hub from library:", error);
+        return { success: false, error: error.message || "Could not remove the hub from the library." };
+    }
 }
