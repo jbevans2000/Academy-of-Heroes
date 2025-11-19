@@ -2,12 +2,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen, Share } from 'lucide-react';
-import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc, query, orderBy } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { QuestHub, Chapter, Company, LibraryHub } from '@/lib/quests';
@@ -656,156 +656,214 @@ export default function QuestsPage() {
 }
 
 ```
-- src/ai/flows/share-to-library.ts
-<content><![CDATA[
-'use server';
+- src/lib/quests.ts:
+```tsx
 
-import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { QuestHub, Chapter, LibraryHub, LibraryChapter } from '@/lib/quests';
 
-interface ShareHubsInput {
+export interface QuizQuestion {
+    id: string;
+    text: string;
+    answers: string[];
+    correctAnswer: number[]; // Use an array to support single or multiple correct answers
+    questionType: 'single' | 'multiple' | 'true-false';
+    imageUrl?: string;
+}
+
+export interface Quiz {
+    questions: QuizQuestion[];
+    settings: {
+        requirePassing: boolean;
+        passingScore: number; // Percentage
+        includeInDailyTraining?: boolean; // New setting
+    };
+}
+
+export type Company = {
+    id: string;
+    name: string;
+    logoUrl?: string;
+}
+
+export interface QuestHub {
+    id: string;
+    name: string;
+    hubOrder: number; // e.g. 1, 2, 3... defines the sequence of hubs
+    worldMapUrl: string; // The map image for the hub itself (e.g., Capitol City map)
+    coordinates: { x: number; y: number }; // Position on the main world map
+    storySummary?: string; // AI-generated running summary of the plot for this hub.
+    // New Reward Fields
+    areRewardsEnabled?: boolean;
+    rewardXp?: number;
+    rewardGold?: number;
+    // New Visibility Fields
+    isVisibleToAll?: boolean;
+    assignedCompanyIds?: string[];
+    isActive?: boolean; // New field to control hub visibility
+    hubType?: 'standard' | 'sidequest'; // New field for hub type
+}
+
+export interface LessonPart {
+    id: string;
+    content: string;
+}
+
+export interface Chapter {
+    id:string;
+    hubId: string;
+    title: string;
+    chapterNumber: number;
+    isActive?: boolean; // New field to control chapter visibility
+    // Story media
+    storyContent: string;
+    mainImageUrl: string;
+    videoUrl: string;
+    decorativeImageUrl1: string;
+    decorativeImageUrl2: string;
+    storyAdditionalContent: string;
+    
+    // DEPRECATED Lesson Media - will be migrated to lessonParts
+    lessonContent?: string;
+    lessonMainImageUrl?: string;
+    lessonVideoUrl?: string;
+    lessonDecorativeImageUrl1?: string;
+    lessonDecorativeImageUrl2?: string;
+    
+    // NEW Lesson Structure
+    lessonParts?: LessonPart[];
+
+    coordinates: { x: number; y: number }; // Position on the hub map
+    quiz?: Quiz;
+}
+
+export interface QuestCompletionRequest {
+    id: string;
     teacherUid: string;
-    hubIds: string[];
+    studentUid: string;
+    studentName: string;
+    characterName: string;
+    hubId: string;
+    chapterId: string;
+    chapterNumber: number;
+    chapterTitle: string;
+    requestedAt: any; // Firestore ServerTimestamp
+    quizScore?: number;
+    quizAnswers?: { question: string; studentAnswer: string; correctAnswer: string; isCorrect: boolean }[];
+}
+
+
+// --- ROYAL LIBRARY TYPES ---
+
+export interface LibraryHub extends Omit<QuestHub, 'id'> {
+    originalHubId: string;
+    originalTeacherId: string;
+    originalTeacherName: string;
+    originalTeacherAvatarUrl?: string;
     subject: string;
     gradeLevel: string;
     tags: string[];
     sagaType: 'standalone' | 'ongoing';
-    description: string;
     sagaName?: string; // New field
+    description: string;
+    importCount: number;
+    createdAt: any; // Firestore ServerTimestamp
 }
 
-interface ShareHubsResponse {
-    success: boolean;
-    sharedCount?: number;
-    error?: string;
+export interface LibraryChapter extends Omit<Chapter, 'id'> {
+    libraryHubId: string; // The ID of the document in the `library_hubs` collection
+    originalChapterId: string;
+    originalTeacherId: string;
+    createdAt: any; // Firestore ServerTimestamp
 }
 
-export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHubsResponse> {
-    const { teacherUid, hubIds, subject, gradeLevel, tags, sagaType, description, sagaName } = input;
-    if (!teacherUid || hubIds.length === 0) {
-        return { success: false, error: "Invalid input." };
+```
+- src/lib/transactions.ts:
+```ts
+
+
+'use server';
+
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
+
+/**
+ * Records a boon transaction to the log.
+ * @param teacherUid The UID of the teacher.
+ * @param studentUid The UID of the student.
+ * @param characterName The character name of the student.
+ * @param boonName The name of the boon.
+ * @param transactionType 'purchase' or 'use'.
+ * @param cost Optional cost for purchase transactions.
+ * @param studentInstructions Optional instructions from the student when using a boon.
+ */
+export async function logBoonTransaction(
+    teacherUid: string, 
+    studentUid: string,
+    characterName: string, 
+    boonName: string, 
+    transactionType: 'purchase' | 'use',
+    cost?: number,
+    studentInstructions?: string
+): Promise<void> {
+    if (!teacherUid) {
+        console.error("Failed to log boon transaction: teacherUid is missing.");
+        return;
     }
-    
-    let sharedCount = 0;
-
     try {
-        const batch = writeBatch(db);
-        const teacherRef = doc(db, 'teachers', teacherUid);
-        const teacherSnap = await getDoc(teacherRef);
-        const teacherData = teacherSnap.exists() ? teacherSnap.data() : null;
-        const teacherName = teacherData?.name || 'Anonymous Teacher';
-        const teacherAvatar = teacherData?.avatarUrl || '';
+        const transactionData: any = {
+            studentUid,
+            characterName,
+            boonName,
+            transactionType,
+            timestamp: serverTimestamp(),
+        };
 
-        for (const hubId of hubIds) {
-            const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
-            const hubSnap = await getDoc(hubRef);
-            if (!hubSnap.exists()) continue;
-
-            const hubData = hubSnap.data() as QuestHub;
-
-            // 1. Create Library Hub document
-            const newLibraryHubRef = doc(collection(db, 'library_hubs'));
-            const libraryHubData: Omit<LibraryHub, 'id'> = {
-                originalHubId: hubId,
-                originalTeacherId: teacherUid,
-                originalTeacherName: teacherName,
-                originalTeacherAvatarUrl: teacherAvatar,
-                name: hubData.name,
-                worldMapUrl: hubData.worldMapUrl,
-                coordinates: { x: 50, y: 50 }, // Use default coordinates for library view
-                hubOrder: 0, // Not relevant for library
-                storySummary: '', // Can be generated later
-                subject,
-                gradeLevel,
-                tags,
-                sagaType,
-                sagaName: sagaType === 'ongoing' ? sagaName : '', // Add saga name if applicable
-                description,
-                importCount: 0,
-                createdAt: serverTimestamp(),
-            };
-            batch.set(newLibraryHubRef, libraryHubData);
-
-            // 2. Find and copy all chapters for this hub
-            const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
-            const chaptersSnapshot = await getDocs(chaptersQuery);
-
-            for (const chapterDoc of chaptersSnapshot.docs) {
-                const chapterData = chapterDoc.data() as Chapter;
-                const newLibraryChapterRef = doc(collection(db, 'library_chapters'));
-                
-                const libraryChapterData: Omit<LibraryChapter, 'id'> = {
-                    ...chapterData,
-                    libraryHubId: newLibraryHubRef.id,
-                    originalChapterId: chapterDoc.id,
-                    originalTeacherId: teacherUid,
-                    createdAt: serverTimestamp(),
-                };
-                batch.set(newLibraryChapterRef, libraryChapterData);
-            }
-            sharedCount++;
+        if (transactionType === 'purchase' && cost !== undefined) {
+            transactionData.cost = cost;
         }
-        
-        await batch.commit();
 
-        return { success: true, sharedCount };
+        if (transactionType === 'use' && studentInstructions) {
+            transactionData.studentInstructions = studentInstructions;
+        }
 
-    } catch (error: any) {
-        console.error("Error sharing hubs to library:", error);
-        return { success: false, error: error.message || "An unknown error occurred while sharing." };
+        await addDoc(collection(db, 'teachers', teacherUid, 'boonTransactions'), transactionData);
+    } catch (error) {
+        console.error("Failed to write to boon transaction log:", { error });
     }
 }
 
+```
+- src/middleware.ts:
+```ts
+import { NextResponse, type NextRequest } from 'next/server'
 
-interface UnshareHubInput {
-    teacherUid: string;
-    hubId: string; // This is the ID of the document in `library_hubs`
-}
-
-interface UnshareHubResponse {
-    success: boolean;
-    error?: string;
-}
-
-export async function unshareHubFromLibrary(input: UnshareHubInput): Promise<UnshareHubResponse> {
-    const { teacherUid, hubId } = input;
-    if (!teacherUid || !hubId) {
-        return { success: false, error: "Invalid input provided." };
-    }
-    
-    try {
-        const hubRef = doc(db, 'library_hubs', hubId);
-        const hubSnap = await getDoc(hubRef);
-
-        if (!hubSnap.exists()) {
-            return { success: false, error: "The shared hub could not be found." };
+// This function can be marked `async` if using `await` inside
+export function middleware(request: NextRequest) {
+    if (process.env.NODE_ENV === 'production') {
+        if (request.headers.get('x-forwarded-proto') !== 'https') {
+            return NextResponse.redirect(`https://${request.headers.get('host')}${request.nextUrl.pathname}`, 301)
         }
-
-        const hubData = hubSnap.data() as LibraryHub;
-        if (hubData.originalTeacherId !== teacherUid) {
-            return { success: false, error: "You are not authorized to delete this hub." };
-        }
-
-        const batch = writeBatch(db);
-
-        // Find and delete all associated chapters in the library
-        const chaptersQuery = query(collection(db, 'library_chapters'), where('libraryHubId', '==', hubId));
-        const chaptersSnapshot = await getDocs(chaptersQuery);
-
-        chaptersSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
-        // Delete the main library hub document
-        batch.delete(hubRef);
-
-        await batch.commit();
-
-        return { success: true };
-
-    } catch (error: any) {
-        console.error("Error unsharing hub from library:", error);
-        return { success: false, error: error.message || "Could not remove the hub from the library." };
     }
 }
+
+// See "Matching Paths" below to learn more
+export const config = {
+  matcher: '/:path*',
+}
+```
+- storage.rules:
+```rules
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // A global rule to allow public read access to all files.
+    // Write access is still restricted to authenticated users.
+    match /{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null;
+    }
+  }
+}
+
+```
