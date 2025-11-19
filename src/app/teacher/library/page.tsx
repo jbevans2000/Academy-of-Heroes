@@ -30,8 +30,8 @@ export default function RoyalLibraryPage() {
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedGrade, setSelectedGrade] = useState('');
-    const [selectedSubject, setSelectedSubject] = useState('');
+    const [selectedGrade, setSelectedGrade] = useState('all');
+    const [selectedSubject, setSelectedSubject] = useState('all');
     const [selectedTags, setSelectedTags] = useState('');
 
     useEffect(() => {
@@ -70,8 +70,8 @@ export default function RoyalLibraryPage() {
                 hub.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 hub.originalTeacherName.toLowerCase().includes(searchTerm.toLowerCase());
             
-            const gradeMatch = selectedGrade === '' || hub.gradeLevel === selectedGrade;
-            const subjectMatch = selectedSubject === '' || hub.subject.toLowerCase().includes(selectedSubject.toLowerCase());
+            const gradeMatch = selectedGrade === 'all' || hub.gradeLevel === selectedGrade;
+            const subjectMatch = selectedSubject === 'all' || hub.subject === selectedSubject;
             
             const tagsToSearch = selectedTags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
             const tagsMatch = tagsToSearch.length === 0 ||
@@ -129,7 +129,7 @@ export default function RoyalLibraryPage() {
                                         <Select value={selectedGrade} onValueChange={setSelectedGrade}>
                                             <SelectTrigger id="grade-filter"><SelectValue placeholder="All Grades" /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">All Grades</SelectItem>
+                                                <SelectItem value="all">All Grades</SelectItem>
                                                 {gradeLevels.map(grade => <SelectItem key={grade} value={grade}>{grade}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
@@ -139,7 +139,7 @@ export default function RoyalLibraryPage() {
                                         <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                                             <SelectTrigger id="subject-filter"><SelectValue placeholder="All Subjects" /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">All Subjects</SelectItem>
+                                                <SelectItem value="all">All Subjects</SelectItem>
                                                 {uniqueSubjects.map(subject => <SelectItem key={subject} value={subject}>{subject}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
