@@ -20,6 +20,7 @@ import { ArrowLeft, BookOpen, Search, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CreatorProfileDialog } from '@/components/teacher/creator-profile-dialog';
+import Link from 'next/link';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -213,10 +214,12 @@ export default function RoyalLibraryPage() {
                                     {filteredHubs.map(hub => (
                                         <Card key={hub.id} className="flex flex-col bg-card/90 relative">
                                             <div className="absolute top-4 right-4">
-                                                <Avatar>
-                                                    <AvatarImage src={hub.originalTeacherAvatarUrl} alt={hub.originalTeacherName} />
-                                                    <AvatarFallback>{hub.originalTeacherName?.charAt(0) || '?'}</AvatarFallback>
-                                                </Avatar>
+                                                <button onClick={() => handleCreatorClick(hub)}>
+                                                    <Avatar>
+                                                        <AvatarImage src={hub.originalTeacherAvatarUrl} alt={hub.originalTeacherName} />
+                                                        <AvatarFallback>{hub.originalTeacherName?.charAt(0) || '?'}</AvatarFallback>
+                                                    </Avatar>
+                                                </button>
                                             </div>
                                             <CardHeader>
                                                 <CardTitle>{hub.name}</CardTitle>
@@ -233,7 +236,9 @@ export default function RoyalLibraryPage() {
                                                 <p className="text-sm text-muted-foreground">{hub.description}</p>
                                             </CardContent>
                                             <CardFooter className="flex justify-end gap-2">
-                                                <Button variant="outline">Preview</Button>
+                                                <Button asChild variant="outline">
+                                                    <Link href={`/teacher/library/preview/${hub.id}`}>Preview</Link>
+                                                </Button>
                                                 <Button>Import</Button>
                                             </CardFooter>
                                         </Card>
