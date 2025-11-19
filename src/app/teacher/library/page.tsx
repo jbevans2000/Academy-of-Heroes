@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { LibraryHub, QuestHub } from '@/lib/quests';
 
@@ -317,9 +317,7 @@ export default function RoyalLibraryPage() {
     }, [teacher, toast]);
 
     const filteredHubs = useMemo(() => {
-        let sortedHubs = [...hubs]; // Already sorted by date from Firestore query
-        
-        return sortedHubs.filter(hub => {
+        return hubs.filter(hub => {
             const lowerCaseSearchTerm = searchTerm.toLowerCase();
             const searchTermMatch = searchTerm === '' ||
                 hub.name.toLowerCase().includes(lowerCaseSearchTerm) ||
@@ -452,7 +450,7 @@ export default function RoyalLibraryPage() {
                                             <Label htmlFor="search-term">Search by Keyword</Label>
                                             <div className="relative">
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                                <Input id="search-term" placeholder="e.g., Photosynthesis" className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                                <Input id="search-term" placeholder="e.g., Photosynthesis, Civil War" className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -506,7 +504,7 @@ export default function RoyalLibraryPage() {
                                         return (
                                         <React.Fragment key={hub.id}>
                                             {showSagaHeader && (
-                                                <div className="p-3 bg-primary/20 rounded-lg border-l-4 border-primary">
+                                                <div className="p-3 bg-primary/30 rounded-lg border-l-4 border-primary">
                                                     <h2 className="text-2xl font-bold font-headline">{hub.sagaName}</h2>
                                                     <p className="text-sm text-muted-foreground">A multi-part saga by {hub.originalTeacherName}</p>
                                                 </div>
@@ -550,7 +548,7 @@ export default function RoyalLibraryPage() {
                                                     <Button asChild variant="outline">
                                                         <Link href={`/teacher/library/preview/${hub.id}`}>Preview</Link>
                                                     </Button>
-                                                    <Button>Import</Button>
+                                                    <Button disabled>Import</Button>
                                                 </CardFooter>
                                             </Card>
                                         </React.Fragment>
