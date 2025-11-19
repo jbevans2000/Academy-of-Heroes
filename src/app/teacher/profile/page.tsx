@@ -14,12 +14,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, ArrowLeft, CreditCard, Upload } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, CreditCard, Upload, PlusCircle, Trash2 } from 'lucide-react';
 import { updateTeacherProfile } from '@/ai/flows/manage-teacher';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
+import { Separator } from '@/components/ui/separator';
 
 interface TeacherProfile {
     name: string;
@@ -31,6 +32,7 @@ interface TeacherProfile {
     bio?: string;
     subjectsTaught?: string[];
     avatarUrl?: string;
+    sagas?: string[]; // New field
 }
 
 export default function TeacherProfilePage() {
@@ -38,8 +40,8 @@ export default function TeacherProfilePage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [], avatarUrl: '' });
-    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [], avatarUrl: '' });
+    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', sagas: [] });
+    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', sagas: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isBeta, setIsBeta] = useState(false);
@@ -49,6 +51,9 @@ export default function TeacherProfilePage() {
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
+    // New state for sagas
+    const [newSagaName, setNewSagaName] = useState('');
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -57,8 +62,9 @@ export default function TeacherProfilePage() {
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data() as TeacherProfile;
-                    setProfile(data);
-                    setInitialProfile(data);
+                    const profileData = { ...data, sagas: data.sagas || [] };
+                    setProfile(profileData);
+                    setInitialProfile(profileData);
                     setAvatarPreview(data.avatarUrl || null);
                 }
                 const settings = await getGlobalSettings();
@@ -87,6 +93,19 @@ export default function TeacherProfilePage() {
             setAvatarFile(file);
             setAvatarPreview(URL.createObjectURL(file));
         }
+    };
+
+    const handleAddSaga = () => {
+        if (newSagaName.trim()) {
+            const updatedSagas = [...(profile.sagas || []), newSagaName.trim()];
+            setProfile(prev => ({ ...prev, sagas: updatedSagas }));
+            setNewSagaName('');
+        }
+    };
+
+    const handleRemoveSaga = (indexToRemove: number) => {
+        const updatedSagas = (profile.sagas || []).filter((_, index) => index !== indexToRemove);
+        setProfile(prev => ({ ...prev, sagas: updatedSagas }));
     };
 
     const hasChanges = JSON.stringify(profile) !== JSON.stringify(initialProfile) || !!avatarFile;
@@ -124,6 +143,7 @@ export default function TeacherProfilePage() {
                 address: profile.address || '',
                 bio: profile.bio || '',
                 subjectsTaught: profile.subjectsTaught || [],
+                sagas: profile.sagas || [], // Save sagas
                 avatarUrl: uploadedAvatarUrl,
             });
 
@@ -236,6 +256,47 @@ export default function TeacherProfilePage() {
                         </CardContent>
                     </Card>
 
+                    <Card className="bg-card/90 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle>My Sagas</CardTitle>
+                            <CardDescription>Create names for overarching storylines that connect multiple Quest Hubs.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="new-saga-name">New Saga Name</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="new-saga-name"
+                                        value={newSagaName}
+                                        onChange={(e) => setNewSagaName(e.target.value)}
+                                        placeholder="e.g., The Dragon's Awakening"
+                                    />
+                                    <Button onClick={handleAddSaga}>
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Saga
+                                    </Button>
+                                </div>
+                            </div>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Existing Sagas:</h4>
+                                <div className="space-y-2">
+                                    {(profile.sagas && profile.sagas.length > 0) ? (
+                                        profile.sagas.map((saga, index) => (
+                                            <div key={index} className="flex items-center justify-between p-2 bg-secondary rounded-md">
+                                                <span className="font-medium">{saga}</span>
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSaga(index)}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">You haven't created any sagas yet.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                      <Card className="bg-card/90 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Billing & Subscription</CardTitle>
@@ -270,5 +331,3 @@ export default function TeacherProfilePage() {
         </div>
     )
 }
-
-    

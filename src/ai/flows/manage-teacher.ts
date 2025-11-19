@@ -25,6 +25,7 @@ interface UpdateProfileInput {
   bio?: string;
   subjectsTaught?: string[];
   avatarUrl?: string;
+  sagas?: string[];
 }
 
 export async function updateTeacherProfile(input: UpdateProfileInput): Promise<ActionResponse> {
@@ -40,6 +41,7 @@ export async function updateTeacherProfile(input: UpdateProfileInput): Promise<A
       bio: input.bio || '',
       subjectsTaught: input.subjectsTaught || [],
       avatarUrl: input.avatarUrl || '',
+      sagas: input.sagas || [],
     });
     
     await logGameEvent(input.teacherUid, 'GAMEMASTER', 'Updated their profile information.');
