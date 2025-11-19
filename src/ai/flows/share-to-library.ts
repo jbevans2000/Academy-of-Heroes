@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { QuestHub, Chapter, LibraryHub, LibraryChapter } from '@/lib/quests';
 
