@@ -1,5 +1,4 @@
 
-
 export interface QuizQuestion {
     id: string;
     text: string;
@@ -67,7 +66,6 @@ export interface Chapter {
     lessonVideoUrl?: string;
     lessonDecorativeImageUrl1?: string;
     lessonDecorativeImageUrl2?: string;
-    lessonAdditionalContent?: string;
     
     // NEW Lesson Structure
     lessonParts?: LessonPart[];
@@ -100,10 +98,10 @@ export interface LibraryHub extends Omit<QuestHub, 'id'> {
     originalTeacherName: string;
     originalTeacherAvatarUrl?: string;
     subject: string;
-    gradeLevels: string[]; // Changed from gradeLevel
+    gradeLevels: string[];
     tags: string[];
     sagaType: 'standalone' | 'ongoing';
-    sagaName?: string; // New field
+    sagaName?: string;
     description: string;
     importCount: number;
     createdAt: any; // Firestore ServerTimestamp

@@ -9,7 +9,7 @@ interface ShareHubsInput {
     teacherUid: string;
     hubIds: string[];
     subject: string;
-    gradeLevels: string[]; // Changed from gradeLevel: string
+    gradeLevels: string[]; // Changed from gradeLevel
     tags: string[];
     sagaType: 'standalone' | 'ongoing';
     description: string;
