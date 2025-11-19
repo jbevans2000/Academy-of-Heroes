@@ -33,7 +33,9 @@ export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHu
         const batch = writeBatch(db);
         const teacherRef = doc(db, 'teachers', teacherUid);
         const teacherSnap = await getDoc(teacherRef);
-        const teacherName = teacherSnap.exists() ? teacherSnap.data().name : 'Anonymous Teacher';
+        const teacherData = teacherSnap.exists() ? teacherSnap.data() : null;
+        const teacherName = teacherData?.name || 'Anonymous Teacher';
+        const teacherAvatar = teacherData?.avatarUrl || '';
 
         for (const hubId of hubIds) {
             const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
@@ -48,6 +50,7 @@ export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHu
                 originalHubId: hubId,
                 originalTeacherId: teacherUid,
                 originalTeacherName: teacherName,
+                originalTeacherAvatarUrl: teacherAvatar,
                 name: hubData.name,
                 worldMapUrl: hubData.worldMapUrl,
                 coordinates: { x: 50, y: 50 }, // Use default coordinates for library view

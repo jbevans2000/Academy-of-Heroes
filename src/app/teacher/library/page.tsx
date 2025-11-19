@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, BookOpen, Search, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -168,7 +170,13 @@ export default function RoyalLibraryPage() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredHubs.map(hub => (
-                                    <Card key={hub.id} className="flex flex-col bg-card/90">
+                                    <Card key={hub.id} className="flex flex-col bg-card/90 relative">
+                                        <div className="absolute top-4 right-4">
+                                            <Avatar>
+                                                <AvatarImage src={hub.originalTeacherAvatarUrl} alt={hub.originalTeacherName} />
+                                                <AvatarFallback>{hub.originalTeacherName?.charAt(0) || '?'}</AvatarFallback>
+                                            </Avatar>
+                                        </div>
                                         <CardHeader>
                                             <CardTitle>{hub.name}</CardTitle>
                                             <CardDescription>By {hub.originalTeacherName}</CardDescription>

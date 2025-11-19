@@ -98,6 +98,7 @@ export interface LibraryHub extends Omit<QuestHub, 'id'> {
     originalHubId: string;
     originalTeacherId: string;
     originalTeacherName: string;
+    originalTeacherAvatarUrl?: string;
     subject: string;
     gradeLevel: string;
     tags: string[];
