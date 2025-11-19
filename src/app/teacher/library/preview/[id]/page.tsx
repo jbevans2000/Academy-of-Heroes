@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { LibraryHub, LibraryChapter } from '@/lib/quests';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -50,8 +50,9 @@ export default function LibraryPreviewPage() {
                 if (hubSnap.exists()) {
                     setHub({ id: hubSnap.id, ...hubSnap.data() } as LibraryHub);
                     
+                    // Correctly query the library_chapters collection
                     const chaptersQuery = query(collection(db, 'library_chapters'), where('libraryHubId', '==', hubId));
-                    const chaptersSnap = await getDoc(chaptersQuery);
+                    const chaptersSnap = await getDocs(chaptersQuery);
                     const chaptersData = chaptersSnap.docs
                         .map(doc => ({ id: doc.id, ...doc.data() } as LibraryChapter))
                         .sort((a,b) => a.chapterNumber - b.chapterNumber);
