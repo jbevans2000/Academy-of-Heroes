@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc, runTransaction, increment } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc, runTransaction, increment, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { QuestHub, Chapter, LibraryHub, LibraryChapter } from '@/lib/quests';
 import { v4 as uuidv4 } from 'uuid';
@@ -46,7 +46,8 @@ export async function importHub(input: ImportHubInput): Promise<ImportHubRespons
         const orderConflictSnap = await getDocs(orderConflictQuery);
 
         let newHubOrder = libraryHubData.hubOrder;
-        if (!orderConflictSnap.empty) {
+        // Avoid order conflicts only for standard hubs
+        if (libraryHubData.hubType !== 'sidequest' && !orderConflictSnap.empty) {
             // Find the highest current order and add 1
             const allHubsSnap = await getDocs(query(teacherHubsRef, orderBy('hubOrder', 'desc'), limit(1)));
             const highestOrder = allHubsSnap.empty ? 0 : allHubsSnap.docs[0].data().hubOrder;
@@ -60,11 +61,11 @@ export async function importHub(input: ImportHubInput): Promise<ImportHubRespons
             worldMapUrl: libraryHubData.worldMapUrl,
             coordinates: libraryHubData.coordinates,
             hubOrder: newHubOrder,
-            storySummary: libraryHubData.storySummary,
+            storySummary: libraryHubData.storySummary || '', // Ensure storySummary is not undefined
             areRewardsEnabled: false, // Default to off for imported quests
             isVisibleToAll: true,
             isActive: false, // Default to inactive so teacher can review
-            hubType: libraryHubData.hubType,
+            hubType: libraryHubData.hubType || 'standard', // Fallback to 'standard' if hubType is missing
         };
         transaction.set(newQuestHubRef, newHubData);
 
