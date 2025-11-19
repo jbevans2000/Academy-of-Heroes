@@ -320,10 +320,12 @@ export default function RoyalLibraryPage() {
         let sortedHubs = [...hubs].sort((a, b) => (a.sagaName || 'zzzz').localeCompare(b.sagaName || 'zzzz') || a.hubOrder - b.hubOrder);
         
         return sortedHubs.filter(hub => {
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
             const searchTermMatch = searchTerm === '' ||
-                hub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                hub.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                hub.originalTeacherName.toLowerCase().includes(searchTerm.toLowerCase());
+                hub.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+                hub.description.toLowerCase().includes(lowerCaseSearchTerm) ||
+                hub.originalTeacherName.toLowerCase().includes(lowerCaseSearchTerm) ||
+                (hub.tags || []).some(tag => tag.toLowerCase().includes(lowerCaseSearchTerm));
             
             const gradeMatch = selectedGrade === 'all' || hub.gradeLevels.includes(selectedGrade);
             const subjectMatch = selectedSubject === 'all' || hub.subject === selectedSubject;
