@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { QuestHub, Chapter, LibraryHub, LibraryChapter } from '@/lib/quests';
 
@@ -93,5 +93,58 @@ export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHu
     } catch (error: any) {
         console.error("Error sharing hubs to library:", error);
         return { success: false, error: error.message || "An unknown error occurred while sharing." };
+    }
+}
+
+
+interface UnshareHubInput {
+    teacherUid: string;
+    hubId: string; // This is the ID of the document in `library_hubs`
+}
+
+interface UnshareHubResponse {
+    success: boolean;
+    error?: string;
+}
+
+export async function unshareHubFromLibrary(input: UnshareHubInput): Promise<UnshareHubResponse> {
+    const { teacherUid, hubId } = input;
+    if (!teacherUid || !hubId) {
+        return { success: false, error: "Invalid input provided." };
+    }
+    
+    try {
+        const hubRef = doc(db, 'library_hubs', hubId);
+        const hubSnap = await getDoc(hubRef);
+
+        if (!hubSnap.exists()) {
+            return { success: false, error: "The shared hub could not be found." };
+        }
+
+        const hubData = hubSnap.data() as LibraryHub;
+        if (hubData.originalTeacherId !== teacherUid) {
+            return { success: false, error: "You are not authorized to delete this hub." };
+        }
+
+        const batch = writeBatch(db);
+
+        // Find and delete all associated chapters in the library
+        const chaptersQuery = query(collection(db, 'library_chapters'), where('libraryHubId', '==', hubId));
+        const chaptersSnapshot = await getDocs(chaptersQuery);
+
+        chaptersSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        // Delete the main library hub document
+        batch.delete(hubRef);
+
+        await batch.commit();
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error unsharing hub from library:", error);
+        return { success: false, error: error.message || "Could not remove the hub from the library." };
     }
 }
