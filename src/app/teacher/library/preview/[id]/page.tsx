@@ -15,6 +15,9 @@ import { ArrowLeft, BookOpen, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 
 export default function LibraryPreviewPage() {
     const router = useRouter();
@@ -50,7 +53,6 @@ export default function LibraryPreviewPage() {
                 if (hubSnap.exists()) {
                     setHub({ id: hubSnap.id, ...hubSnap.data() } as LibraryHub);
                     
-                    // Correctly query the library_chapters collection
                     const chaptersQuery = query(collection(db, 'library_chapters'), where('libraryHubId', '==', hubId));
                     const chaptersSnap = await getDocs(chaptersQuery);
                     const chaptersData = chaptersSnap.docs
@@ -131,17 +133,43 @@ export default function LibraryPreviewPage() {
                             <CardTitle>Chapters in this Hub ({chapters.length})</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-2">
+                             <Accordion type="single" collapsible className="w-full">
                                 {chapters.length > 0 ? (
                                     chapters.map(chapter => (
-                                        <div key={chapter.originalChapterId} className="p-3 border rounded-md bg-secondary/50">
-                                            <p className="font-semibold">Chapter {chapter.chapterNumber}: {chapter.title}</p>
-                                        </div>
+                                        <AccordionItem key={chapter.originalChapterId} value={chapter.originalChapterId}>
+                                            <AccordionTrigger className="text-lg hover:no-underline">
+                                                Chapter {chapter.chapterNumber}: {chapter.title}
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                                <Tabs defaultValue="story" className="w-full">
+                                                    <TabsList className="grid w-full grid-cols-2">
+                                                        <TabsTrigger value="story">Story</TabsTrigger>
+                                                        <TabsTrigger value="lesson">Lesson</TabsTrigger>
+                                                    </TabsList>
+                                                    <TabsContent value="story" className="mt-4 p-4 border rounded-md bg-secondary/30">
+                                                        <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyContent || '' }} />
+                                                        {chapter.storyAdditionalContent && <div className="prose dark:prose-invert max-w-none mt-4 pt-4 border-t" dangerouslySetInnerHTML={{ __html: chapter.storyAdditionalContent }} />}
+                                                    </TabsContent>
+                                                    <TabsContent value="lesson" className="mt-4 p-4 border rounded-md bg-secondary/30">
+                                                        {chapter.lessonParts && chapter.lessonParts.length > 0 ? (
+                                                            chapter.lessonParts.map((part, index) => (
+                                                                <div key={part.id}>
+                                                                    {index > 0 && <Separator className="my-4" />}
+                                                                    <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: part.content }} />
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <p className="text-muted-foreground">No lesson content for this chapter.</p>
+                                                        )}
+                                                    </TabsContent>
+                                                </Tabs>
+                                            </AccordionContent>
+                                        </AccordionItem>
                                     ))
                                 ) : (
                                     <p className="text-muted-foreground text-center">No chapters were found for this hub.</p>
                                 )}
-                            </div>
+                            </Accordion>
                         </CardContent>
                         <CardFooter className="justify-end">
                             <Button disabled>Import Hub</Button>
