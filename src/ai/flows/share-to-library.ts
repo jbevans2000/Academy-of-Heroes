@@ -9,10 +9,11 @@ interface ShareHubsInput {
     teacherUid: string;
     hubIds: string[];
     subject: string;
-    gradeLevel: string;
+    gradeLevels: string[]; // Changed from gradeLevel: string
     tags: string[];
     sagaType: 'standalone' | 'ongoing';
     description: string;
+    sagaName?: string;
 }
 
 interface ShareHubsResponse {
@@ -22,7 +23,7 @@ interface ShareHubsResponse {
 }
 
 export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHubsResponse> {
-    const { teacherUid, hubIds, subject, gradeLevel, tags, sagaType, description } = input;
+    const { teacherUid, hubIds, subject, gradeLevels, tags, sagaType, description, sagaName } = input;
     if (!teacherUid || hubIds.length === 0) {
         return { success: false, error: "Invalid input." };
     }
@@ -57,9 +58,10 @@ export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHu
                 hubOrder: 0, // Not relevant for library
                 storySummary: '', // Can be generated later
                 subject,
-                gradeLevel,
+                gradeLevels, // Changed from gradeLevel
                 tags,
                 sagaType,
+                sagaName: sagaType === 'ongoing' ? sagaName : '',
                 description,
                 importCount: 0,
                 createdAt: serverTimestamp(),

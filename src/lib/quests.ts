@@ -100,7 +100,7 @@ export interface LibraryHub extends Omit<QuestHub, 'id'> {
     originalTeacherName: string;
     originalTeacherAvatarUrl?: string;
     subject: string;
-    gradeLevel: string;
+    gradeLevels: string[]; // Changed from gradeLevel
     tags: string[];
     sagaType: 'standalone' | 'ongoing';
     sagaName?: string; // New field

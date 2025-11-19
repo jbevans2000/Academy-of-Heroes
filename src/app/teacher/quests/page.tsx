@@ -41,6 +41,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { shareHubsToLibrary } from '@/ai/flows/share-to-library';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+} from '@/components/ui/dropdown-menu';
+
 
 interface ShareDialogProps {
   isOpen: boolean;
@@ -57,7 +66,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
     const { toast } = useToast();
     const [selectedHubIds, setSelectedHubIds] = useState<string[]>([]);
     const [subject, setSubject] = useState('');
-    const [gradeLevel, setGradeLevel] = useState('');
+    const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
     const [tags, setTags] = useState('');
     const [sagaType, setSagaType] = useState<'standalone' | 'ongoing'>('standalone');
     const [description, setDescription] = useState('');
@@ -69,7 +78,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
     }, [allLibraryHubs]);
 
     const handleShare = async () => {
-        if (!teacher || selectedHubIds.length === 0 || !subject || !gradeLevel) {
+        if (!teacher || selectedHubIds.length === 0 || !subject || selectedGrades.length === 0) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select at least one hub and fill out all required fields.' });
             return;
         }
@@ -83,7 +92,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                 teacherUid: teacher.uid,
                 hubIds: selectedHubIds,
                 subject,
-                gradeLevel,
+                gradeLevels: selectedGrades,
                 tags: tags.split(',').map(t => t.trim()).filter(Boolean),
                 sagaType,
                 description,
@@ -103,18 +112,27 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
         }
     };
     
-    // Reset local state when dialog opens/closes
     useEffect(() => {
         if (!isOpen) {
             setSelectedHubIds([]);
             setSubject('');
-            setGradeLevel('');
+            setSelectedGrades([]);
             setTags('');
             setSagaType('standalone');
             setDescription('');
             setSelectedSaga('');
         }
     }, [isOpen]);
+
+    const handleGradeSelect = (grade: string) => {
+        setSelectedGrades(prev => 
+            prev.includes(grade)
+            ? prev.filter(g => g !== grade)
+            : [...prev, grade]
+        );
+    };
+
+    const selectedGradesText = selectedGrades.length > 0 ? selectedGrades.join(', ') : "Select grade(s)...";
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -152,12 +170,27 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="gradeLevel">Grade Level</Label>
-                             <Select onValueChange={setGradeLevel} value={gradeLevel}>
-                                <SelectTrigger id="gradeLevel"><SelectValue placeholder="Select..." /></SelectTrigger>
-                                <SelectContent>
-                                    {gradeLevels.map(grade => <SelectItem key={grade} value={grade}>{grade}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                        <span className="truncate">{selectedGradesText}</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56">
+                                    <DropdownMenuLabel>Select Grade Levels</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {gradeLevels.map((grade) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={grade}
+                                            checked={selectedGrades.includes(grade)}
+                                            onCheckedChange={() => handleGradeSelect(grade)}
+                                            onSelect={(e) => e.preventDefault()} // Prevent closing on select
+                                        >
+                                            {grade}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
                     <div className="space-y-2">
@@ -654,216 +687,3 @@ export default function QuestsPage() {
     </>
   );
 }
-
-```
-- src/lib/quests.ts:
-```tsx
-
-
-export interface QuizQuestion {
-    id: string;
-    text: string;
-    answers: string[];
-    correctAnswer: number[]; // Use an array to support single or multiple correct answers
-    questionType: 'single' | 'multiple' | 'true-false';
-    imageUrl?: string;
-}
-
-export interface Quiz {
-    questions: QuizQuestion[];
-    settings: {
-        requirePassing: boolean;
-        passingScore: number; // Percentage
-        includeInDailyTraining?: boolean; // New setting
-    };
-}
-
-export type Company = {
-    id: string;
-    name: string;
-    logoUrl?: string;
-}
-
-export interface QuestHub {
-    id: string;
-    name: string;
-    hubOrder: number; // e.g. 1, 2, 3... defines the sequence of hubs
-    worldMapUrl: string; // The map image for the hub itself (e.g., Capitol City map)
-    coordinates: { x: number; y: number }; // Position on the main world map
-    storySummary?: string; // AI-generated running summary of the plot for this hub.
-    // New Reward Fields
-    areRewardsEnabled?: boolean;
-    rewardXp?: number;
-    rewardGold?: number;
-    // New Visibility Fields
-    isVisibleToAll?: boolean;
-    assignedCompanyIds?: string[];
-    isActive?: boolean; // New field to control hub visibility
-    hubType?: 'standard' | 'sidequest'; // New field for hub type
-}
-
-export interface LessonPart {
-    id: string;
-    content: string;
-}
-
-export interface Chapter {
-    id:string;
-    hubId: string;
-    title: string;
-    chapterNumber: number;
-    isActive?: boolean; // New field to control chapter visibility
-    // Story media
-    storyContent: string;
-    mainImageUrl: string;
-    videoUrl: string;
-    decorativeImageUrl1: string;
-    decorativeImageUrl2: string;
-    storyAdditionalContent: string;
-    
-    // DEPRECATED Lesson Media - will be migrated to lessonParts
-    lessonContent?: string;
-    lessonMainImageUrl?: string;
-    lessonVideoUrl?: string;
-    lessonDecorativeImageUrl1?: string;
-    lessonDecorativeImageUrl2?: string;
-    
-    // NEW Lesson Structure
-    lessonParts?: LessonPart[];
-
-    coordinates: { x: number; y: number }; // Position on the hub map
-    quiz?: Quiz;
-}
-
-export interface QuestCompletionRequest {
-    id: string;
-    teacherUid: string;
-    studentUid: string;
-    studentName: string;
-    characterName: string;
-    hubId: string;
-    chapterId: string;
-    chapterNumber: number;
-    chapterTitle: string;
-    requestedAt: any; // Firestore ServerTimestamp
-    quizScore?: number;
-    quizAnswers?: { question: string; studentAnswer: string; correctAnswer: string; isCorrect: boolean }[];
-}
-
-
-// --- ROYAL LIBRARY TYPES ---
-
-export interface LibraryHub extends Omit<QuestHub, 'id'> {
-    originalHubId: string;
-    originalTeacherId: string;
-    originalTeacherName: string;
-    originalTeacherAvatarUrl?: string;
-    subject: string;
-    gradeLevel: string;
-    tags: string[];
-    sagaType: 'standalone' | 'ongoing';
-    sagaName?: string; // New field
-    description: string;
-    importCount: number;
-    createdAt: any; // Firestore ServerTimestamp
-}
-
-export interface LibraryChapter extends Omit<Chapter, 'id'> {
-    libraryHubId: string; // The ID of the document in the `library_hubs` collection
-    originalChapterId: string;
-    originalTeacherId: string;
-    createdAt: any; // Firestore ServerTimestamp
-}
-
-```
-- src/lib/transactions.ts:
-```ts
-
-
-'use server';
-
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
-
-/**
- * Records a boon transaction to the log.
- * @param teacherUid The UID of the teacher.
- * @param studentUid The UID of the student.
- * @param characterName The character name of the student.
- * @param boonName The name of the boon.
- * @param transactionType 'purchase' or 'use'.
- * @param cost Optional cost for purchase transactions.
- * @param studentInstructions Optional instructions from the student when using a boon.
- */
-export async function logBoonTransaction(
-    teacherUid: string, 
-    studentUid: string,
-    characterName: string, 
-    boonName: string, 
-    transactionType: 'purchase' | 'use',
-    cost?: number,
-    studentInstructions?: string
-): Promise<void> {
-    if (!teacherUid) {
-        console.error("Failed to log boon transaction: teacherUid is missing.");
-        return;
-    }
-    try {
-        const transactionData: any = {
-            studentUid,
-            characterName,
-            boonName,
-            transactionType,
-            timestamp: serverTimestamp(),
-        };
-
-        if (transactionType === 'purchase' && cost !== undefined) {
-            transactionData.cost = cost;
-        }
-
-        if (transactionType === 'use' && studentInstructions) {
-            transactionData.studentInstructions = studentInstructions;
-        }
-
-        await addDoc(collection(db, 'teachers', teacherUid, 'boonTransactions'), transactionData);
-    } catch (error) {
-        console.error("Failed to write to boon transaction log:", { error });
-    }
-}
-
-```
-- src/middleware.ts:
-```ts
-import { NextResponse, type NextRequest } from 'next/server'
-
-// This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
-    if (process.env.NODE_ENV === 'production') {
-        if (request.headers.get('x-forwarded-proto') !== 'https') {
-            return NextResponse.redirect(`https://${request.headers.get('host')}${request.nextUrl.pathname}`, 301)
-        }
-    }
-}
-
-// See "Matching Paths" below to learn more
-export const config = {
-  matcher: '/:path*',
-}
-```
-- storage.rules:
-```rules
-
-rules_version = '2';
-
-service firebase.storage {
-  match /b/{bucket}/o {
-    // A global rule to allow public read access to all files.
-    // Write access is still restricted to authenticated users.
-    match /{allPaths=**} {
-      allow read;
-      allow write: if request.auth != null;
-    }
-  }
-}
-
-```
