@@ -48,7 +48,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 
 interface ShareDialogProps {
@@ -72,6 +72,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
     const [description, setDescription] = useState('');
     const [isSharing, setIsSharing] = useState(false);
     const [selectedSaga, setSelectedSaga] = useState('');
+    const [contentToShare, setContentToShare] = useState<'both' | 'story' | 'lesson'>('both');
 
     const alreadySharedHubIds = useMemo(() => {
         return new Set(allLibraryHubs.map(hub => hub.originalHubId));
@@ -97,6 +98,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                 sagaType,
                 description,
                 sagaName: sagaType === 'ongoing' ? selectedSaga : '',
+                contentToShare,
             });
 
             if (result.success) {
@@ -121,6 +123,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
             setSagaType('standalone');
             setDescription('');
             setSelectedSaga('');
+            setContentToShare('both');
         }
     }, [isOpen]);
 
@@ -169,7 +172,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                             <Input id="subject" value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g., American History" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="gradeLevel">Grade Level</Label>
+                            <Label htmlFor="gradeLevel">Grade Level(s)</Label>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="w-full justify-start text-left font-normal">
@@ -225,6 +228,23 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                                 </Select>
                             )}
                         </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Content to Share</Label>
+                        <RadioGroup value={contentToShare} onValueChange={(v) => setContentToShare(v as any)} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="both" id="share-both" />
+                                <Label htmlFor="share-both">Story & Lesson</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="story" id="share-story" />
+                                <Label htmlFor="share-story">Story Only</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="lesson" id="share-lesson" />
+                                <Label htmlFor="share-lesson">Lesson Only</Label>
+                            </div>
+                        </RadioGroup>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
@@ -581,10 +601,16 @@ export default function QuestsPage() {
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 py-20 text-center">
                 <h2 className="text-xl font-semibold text-muted-foreground">No Quests Created Yet</h2>
                 <p className="mt-2 text-sm text-muted-foreground">This area will show a list of all the quests and chapters you have created.</p>
-                <Button onClick={() => router.push('/teacher/quests/new')} className="mt-4">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Create Your First Quest
-                </Button>
+                <div className="flex gap-2 mt-4">
+                    <Button onClick={() => router.push('/teacher/quests/new')}>
+                        <PlusCircle className="mr-2 h-5 w-5" />
+                        Create Your First Chapter
+                    </Button>
+                     <Button variant="secondary" onClick={() => router.push('/teacher/quests/new?hubOnly=true')}>
+                        <PlusCircle className="mr-2 h-5 w-5" />
+                        Create a Hub
+                    </Button>
+                </div>
             </div>
         ) : (
              <Card>

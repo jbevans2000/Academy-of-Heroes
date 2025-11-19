@@ -15,6 +15,7 @@ interface ShareHubsInput {
     sagaType: 'standalone' | 'ongoing';
     description: string;
     sagaName?: string;
+    contentToShare: 'both' | 'story' | 'lesson';
 }
 
 interface ShareHubsResponse {
@@ -24,7 +25,7 @@ interface ShareHubsResponse {
 }
 
 export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHubsResponse> {
-    const { teacherUid, hubIds, subject, gradeLevels, tags, sagaType, description, sagaName } = input;
+    const { teacherUid, hubIds, subject, gradeLevels, tags, sagaType, description, sagaName, contentToShare } = input;
     if (!teacherUid || hubIds.length === 0) {
         return { success: false, error: "Invalid input." };
     }
@@ -77,8 +78,18 @@ export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHu
                 const chapterData = chapterDoc.data() as Chapter;
                 const newLibraryChapterRef = doc(collection(db, 'library_chapters'));
                 
+                let contentToSave = { ...chapterData };
+
+                if (contentToShare === 'story') {
+                    contentToSave.lessonParts = [{ id: uuidv4(), content: '<p><em>Lesson Not Shared by Creator.</em></p>' }];
+                } else if (contentToShare === 'lesson') {
+                    contentToSave.storyContent = '<p><em>Story Not Shared by Creator.</em></p>';
+                    contentToSave.storyAdditionalContent = '';
+                    contentToSave.videoUrl = '';
+                }
+
                 const libraryChapterData: Omit<LibraryChapter, 'id'> = {
-                    ...chapterData,
+                    ...contentToSave,
                     libraryHubId: newLibraryHubRef.id,
                     originalChapterId: chapterDoc.id,
                     originalTeacherId: teacherUid,
