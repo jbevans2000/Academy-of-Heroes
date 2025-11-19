@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import type { LibraryHub } from '@/lib/quests';
 import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
+import Link from 'next/link';
 
 interface CreatorProfileDialogProps {
   isOpen: boolean;
@@ -54,7 +55,9 @@ export function CreatorProfileDialog({ isOpen, onOpenChange, creator, allHubs }:
                             </CardDescription>
                         </CardHeader>
                         <CardFooter>
-                            <Button size="sm" variant="outline">Preview</Button>
+                            <Button size="sm" variant="outline" asChild>
+                                <Link href={`/teacher/library/preview/${hub.id}`}>Preview</Link>
+                            </Button>
                         </CardFooter>
                     </Card>
                 ))
