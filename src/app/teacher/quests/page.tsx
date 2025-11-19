@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen, Share } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -34,8 +34,135 @@ import { cn } from '@/lib/utils';
 import NextImage from 'next/image';
 import Link from 'next/link';
 import { WorldMapGallery } from '@/components/teacher/world-map-gallery';
-import { deleteQuestHub } from '@/ai/flows/manage-quests';
+import { deleteQuestHub, deleteChapter } from '@/ai/flows/manage-quests';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { shareHubsToLibrary } from '@/ai/flows/share-to-library';
 
+interface ShareDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  hubs: QuestHub[];
+  teacher: User | null;
+}
+
+const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
+
+function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) {
+    const { toast } = useToast();
+    const [selectedHubIds, setSelectedHubIds] = useState<string[]>([]);
+    const [subject, setSubject] = useState('');
+    const [gradeLevel, setGradeLevel] = useState('');
+    const [tags, setTags] = useState('');
+    const [sagaType, setSagaType] = useState<'standalone' | 'ongoing'>('standalone');
+    const [description, setDescription] = useState('');
+    const [isSharing, setIsSharing] = useState(false);
+
+    const handleShare = async () => {
+        if (!teacher || selectedHubIds.length === 0 || !subject || !gradeLevel) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select at least one hub and fill out all required fields.' });
+            return;
+        }
+        setIsSharing(true);
+        try {
+            const result = await shareHubsToLibrary({
+                teacherUid: teacher.uid,
+                hubIds: selectedHubIds,
+                subject,
+                gradeLevel,
+                tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+                sagaType,
+                description,
+            });
+
+            if (result.success) {
+                toast({ title: 'Content Shared!', description: `${result.sharedCount} hub(s) have been shared to the Royal Library.` });
+                onOpenChange(false);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Sharing Failed', description: error.message });
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Share to the Royal Library</DialogTitle>
+                    <DialogDescription>Select the hubs you wish to share and provide some details to help other teachers find them.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label className="font-bold">Select Hubs to Share</Label>
+                        <div className="max-h-48 overflow-y-auto space-y-2 rounded-md border p-2">
+                            {hubs.map(hub => (
+                                <div key={hub.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`share-${hub.id}`}
+                                        checked={selectedHubIds.includes(hub.id)}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedHubIds(prev => checked ? [...prev, hub.id] : prev.filter(id => id !== hub.id));
+                                        }}
+                                    />
+                                    <Label htmlFor={`share-${hub.id}`}>{hub.name}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="subject">Subject</Label>
+                            <Input id="subject" value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g., American History" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="gradeLevel">Grade Level</Label>
+                             <Select onValueChange={setGradeLevel} value={gradeLevel}>
+                                <SelectTrigger id="gradeLevel"><SelectValue placeholder="Select..." /></SelectTrigger>
+                                <SelectContent>
+                                    {gradeLevels.map(grade => <SelectItem key={grade} value={grade}>{grade}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="tags">Tags (comma-separated)</Label>
+                        <Input id="tags" value={tags} onChange={e => setTags(e.target.value)} placeholder="e.g., Civil War, Fractions, Reading Comprehension" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Saga Type</Label>
+                         <RadioGroup value={sagaType} onValueChange={(v) => setSagaType(v as any)} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="standalone" id="standalone" />
+                                <Label htmlFor="standalone">Standalone Hub</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="ongoing" id="ongoing" />
+                                <Label htmlFor="ongoing">Ongoing Saga</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Briefly describe what this quest hub is about." />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleShare} disabled={isSharing}>
+                        {isSharing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Share to Library
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function QuestsPage() {
   const router = useRouter();
@@ -58,6 +185,9 @@ export default function QuestsPage() {
   // State for hub deletion
   const [hubToDelete, setHubToDelete] = useState<QuestHub | null>(null);
   const [isDeletingHub, setIsDeletingHub] = useState(false);
+
+  // State for sharing
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -125,17 +255,21 @@ export default function QuestsPage() {
     if (!teacher) return;
     setIsDeleting(chapterId);
     try {
-        await deleteDoc(doc(db, 'teachers', teacher.uid, 'chapters', chapterId));
-        toast({
-            title: 'Chapter Deleted',
-            description: 'The chapter has been successfully removed.',
-        });
-    } catch (error) {
+        const result = await deleteChapter({ teacherUid: teacher.uid, chapterId });
+        if(result.success) {
+            toast({
+                title: 'Chapter Deleted',
+                description: 'The chapter has been successfully removed.',
+            });
+        } else {
+             throw new Error(result.error);
+        }
+    } catch (error: any) {
         console.error('Error deleting chapter:', error);
         toast({
             variant: 'destructive',
             title: 'Delete Failed',
-            description: 'Could not delete the chapter. Please try again.',
+            description: error.message || 'Could not delete the chapter.',
         });
     } finally {
         setIsDeleting(null);
@@ -215,8 +349,9 @@ export default function QuestsPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col">
-       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
+    <>
+      <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={hubs} teacher={teacher} />
+      <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Set Your World Map Image</DialogTitle>
@@ -284,6 +419,7 @@ export default function QuestsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        <div className="relative flex min-h-screen w-full flex-col">
         {worldMapUrl && (
             <div 
               className="absolute inset-0 -z-10"
@@ -330,6 +466,10 @@ export default function QuestsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+             <Button onClick={() => setIsShareDialogOpen(true)}>
+              <Share className="mr-2 h-5 w-5" />
+              Share to Library
+            </Button>
             <Button onClick={() => router.push('/teacher/quests/new?hubOnly=true')}>
               <PlusCircle className="mr-2 h-5 w-5" />
               Create New Hub
@@ -449,5 +589,6 @@ export default function QuestsPage() {
         )}
       </main>
     </div>
+    </>
   );
 }

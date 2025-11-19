@@ -132,6 +132,10 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
                   Return to Admin Dashboard
               </Button>
           )}
+          <Button variant="outline" onClick={() => router.push('/teacher/library')}>
+              <BookOpen className="mr-2 h-5 w-5" />
+              The Royal Library
+          </Button>
           <Button variant="outline" onClick={() => router.push('/teacher/broadcasts')} className="relative">
                 <Rss className="mr-2 h-5 w-5" />
                 Announcements

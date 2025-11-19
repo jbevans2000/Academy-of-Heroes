@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, ArrowLeft, CreditCard } from 'lucide-react';
 import { updateTeacherProfile } from '@/ai/flows/manage-teacher';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
+import { Textarea } from '@/components/ui/textarea';
 
 interface TeacherProfile {
     name: string;
@@ -24,6 +25,8 @@ interface TeacherProfile {
     characterName?: string;
     contactEmail?: string;
     address?: string;
+    bio?: string;
+    subjectsTaught?: string[];
 }
 
 export default function TeacherProfilePage() {
@@ -31,8 +34,8 @@ export default function TeacherProfilePage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '' });
-    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '' });
+    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [] });
+    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isBeta, setIsBeta] = useState(false);
@@ -58,10 +61,15 @@ export default function TeacherProfilePage() {
         return () => unsubscribe();
     }, [router]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setProfile(prev => ({ ...prev, [name]: value }));
     };
+    
+    const handleSubjectsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.target;
+        setProfile(prev => ({ ...prev, subjectsTaught: value.split(',').map(s => s.trim()) }));
+    }
 
     const hasChanges = JSON.stringify(profile) !== JSON.stringify(initialProfile);
 
@@ -77,6 +85,8 @@ export default function TeacherProfilePage() {
                 characterName: profile.characterName || '',
                 contactEmail: profile.contactEmail || '',
                 address: profile.address || '',
+                bio: profile.bio || '',
+                subjectsTaught: profile.subjectsTaught || [],
             });
 
             if (result.success) {
@@ -152,6 +162,15 @@ export default function TeacherProfilePage() {
                             <div className="space-y-2">
                                 <Label htmlFor="className">Guild Name (Class Name)</Label>
                                 <Input id="className" name="className" value={profile.className} onChange={handleInputChange} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="bio">Bio</Label>
+                                <Textarea id="bio" name="bio" value={profile.bio || ''} onChange={handleInputChange} placeholder="A short bio for your creator profile in the Royal Library." />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="subjectsTaught">Subjects Taught</Label>
+                                <Input id="subjectsTaught" name="subjectsTaught" value={profile.subjectsTaught?.join(', ') || ''} onChange={handleSubjectsChange} placeholder="e.g., History, Mathematics, Science" />
+                                <p className="text-xs text-muted-foreground">Enter subjects separated by commas.</p>
                             </div>
                         </CardContent>
                     </Card>
