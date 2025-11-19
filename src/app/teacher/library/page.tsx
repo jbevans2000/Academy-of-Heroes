@@ -53,25 +53,31 @@ interface ShareDialogProps {
   hubs: QuestHub[];
   allLibraryHubs: LibraryHub[];
   teacher: User | null;
+  teacherSagas: string[];
 }
 
-function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: ShareDialogProps) {
+function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teacherSagas }: ShareDialogProps) {
     const { toast } = useToast();
     const [selectedHubIds, setSelectedHubIds] = useState<string[]>([]);
     const [subject, setSubject] = useState('');
-    const [gradeLevel, setGradeLevel] = useState('');
+    const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
     const [tags, setTags] = useState('');
     const [sagaType, setSagaType] = useState<'standalone' | 'ongoing'>('standalone');
     const [description, setDescription] = useState('');
     const [isSharing, setIsSharing] = useState(false);
+    const [selectedSaga, setSelectedSaga] = useState('');
 
     const alreadySharedHubIds = useMemo(() => {
         return new Set(allLibraryHubs.map(hub => hub.originalHubId));
     }, [allLibraryHubs]);
 
     const handleShare = async () => {
-        if (!teacher || selectedHubIds.length === 0 || !subject || !gradeLevel) {
+        if (!teacher || selectedHubIds.length === 0 || !subject || selectedGrades.length === 0) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select at least one hub and fill out all required fields.' });
+            return;
+        }
+        if (sagaType === 'ongoing' && !selectedSaga) {
+            toast({ variant: 'destructive', title: 'Saga Not Selected', description: 'Please select a saga for your ongoing series.' });
             return;
         }
         setIsSharing(true);
@@ -80,10 +86,11 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
                 teacherUid: teacher.uid,
                 hubIds: selectedHubIds,
                 subject,
-                gradeLevel,
+                gradeLevels: selectedGrades,
                 tags: tags.split(',').map(t => t.trim()).filter(Boolean),
                 sagaType,
                 description,
+                sagaName: sagaType === 'ongoing' ? selectedSaga : '',
             });
 
             if (result.success) {
@@ -98,6 +105,28 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
             setIsSharing(false);
         }
     };
+    
+    useEffect(() => {
+        if (!isOpen) {
+            setSelectedHubIds([]);
+            setSubject('');
+            setSelectedGrades([]);
+            setTags('');
+            setSagaType('standalone');
+            setDescription('');
+            setSelectedSaga('');
+        }
+    }, [isOpen]);
+
+    const handleGradeSelect = (grade: string) => {
+        setSelectedGrades(prev => 
+            prev.includes(grade)
+            ? prev.filter(g => g !== grade)
+            : [...prev, grade]
+        );
+    };
+
+    const selectedGradesText = selectedGrades.length > 0 ? selectedGrades.join(', ') : "Select grade(s)...";
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -134,13 +163,28 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
                             <Input id="subject" value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g., American History" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="gradeLevel">Grade Level</Label>
-                             <Select onValueChange={setGradeLevel} value={gradeLevel}>
-                                <SelectTrigger id="gradeLevel"><SelectValue placeholder="Select..." /></SelectTrigger>
-                                <SelectContent>
-                                    {gradeLevels.map(grade => <SelectItem key={grade} value={grade}>{grade}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="gradeLevel">Grade Level(s)</Label>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                        <span className="truncate">{selectedGradesText}</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56">
+                                    <DropdownMenuLabel>Select Grade Levels</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {gradeLevels.map((grade) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={grade}
+                                            checked={selectedGrades.includes(grade)}
+                                            onCheckedChange={() => handleGradeSelect(grade)}
+                                            onSelect={(e) => e.preventDefault()} // Prevent closing on select
+                                        >
+                                            {grade}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
                     <div className="space-y-2">
@@ -149,16 +193,32 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: Sh
                     </div>
                      <div className="space-y-2">
                         <Label>Saga Type</Label>
-                         <RadioGroup value={sagaType} onValueChange={(v) => setSagaType(v as any)} className="flex gap-4">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="standalone" id="standalone" />
-                                <Label htmlFor="standalone">Standalone Hub</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="ongoing" id="ongoing" />
-                                <Label htmlFor="ongoing">Ongoing Saga</Label>
-                            </div>
-                        </RadioGroup>
+                         <div className="flex gap-4 items-center">
+                            <RadioGroup value={sagaType} onValueChange={(v) => setSagaType(v as any)} className="flex gap-4">
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="standalone" id="standalone" />
+                                    <Label htmlFor="standalone">Standalone Hub</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="ongoing" id="ongoing" />
+                                    <Label htmlFor="ongoing">Ongoing Saga</Label>
+                                </div>
+                            </RadioGroup>
+                             {sagaType === 'ongoing' && (
+                                 <Select value={selectedSaga} onValueChange={setSelectedSaga} disabled={teacherSagas.length === 0}>
+                                    <SelectTrigger className="w-[250px]">
+                                        <SelectValue placeholder="Select a Saga Name..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {teacherSagas.length > 0 ? (
+                                            teacherSagas.map(saga => <SelectItem key={saga} value={saga}>{saga}</SelectItem>)
+                                        ) : (
+                                            <SelectItem value="none" disabled>No sagas defined in your profile.</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
@@ -181,6 +241,7 @@ export default function RoyalLibraryPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [teacherData, setTeacherData] = useState<{sagas?: string[]}>({});
     const [hubs, setHubs] = useState<LibraryHub[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -189,7 +250,7 @@ export default function RoyalLibraryPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedGrade, setSelectedGrade] = useState('all');
     const [selectedSubject, setSelectedSubject] = useState('all');
-    const [selectedTags, setSelectedTags] = useState('');
+    const [selectedSagaFilter, setSelectedSagaFilter] = useState<string | null>(null);
 
     // Dialog state
     const [selectedCreator, setSelectedCreator] = useState<{ id: string; name: string; avatarUrl?: string; bio?: string; } | null>(null);
@@ -225,38 +286,43 @@ export default function RoyalLibraryPage() {
             setIsLoading(false);
         });
 
-        // Fetch teacher's own hubs for the share dialog
+        // Fetch teacher's own hubs and sagas for the share dialog
         const teacherHubsRef = collection(db, 'teachers', teacher.uid, 'questHubs');
         const unsubTeacherHubs = onSnapshot(teacherHubsRef, (snapshot) => {
             setTeacherHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)));
         });
 
+        const teacherDocRef = doc(db, 'teachers', teacher.uid);
+        const unsubTeacherData = onSnapshot(teacherDocRef, (snapshot) => {
+            if (snapshot.exists()) {
+                setTeacherData(snapshot.data() as { sagas?: string[] });
+            }
+        });
+
         return () => {
             unsubLibrary();
             unsubTeacherHubs();
+            unsubTeacherData();
         };
 
     }, [teacher, toast]);
 
     const filteredHubs = useMemo(() => {
-        return hubs.filter(hub => {
+        let sortedHubs = [...hubs].sort((a, b) => (a.sagaName || 'zzzz').localeCompare(b.sagaName || 'zzzz') || a.hubOrder - b.hubOrder);
+        
+        return sortedHubs.filter(hub => {
             const searchTermMatch = searchTerm === '' ||
                 hub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 hub.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 hub.originalTeacherName.toLowerCase().includes(searchTerm.toLowerCase());
             
-            const gradeMatch = selectedGrade === 'all' || hub.gradeLevel === selectedGrade;
+            const gradeMatch = selectedGrade === 'all' || hub.gradeLevels.includes(selectedGrade);
             const subjectMatch = selectedSubject === 'all' || hub.subject === selectedSubject;
-            
-            const tagsToSearch = selectedTags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-            const tagsMatch = tagsToSearch.length === 0 ||
-                tagsToSearch.every(searchTag => 
-                    hub.tags.some(hubTag => hubTag.toLowerCase().includes(searchTag))
-                );
+            const sagaMatch = !selectedSagaFilter || hub.sagaName === selectedSagaFilter;
 
-            return searchTermMatch && gradeMatch && subjectMatch && tagsMatch;
+            return searchTermMatch && gradeMatch && subjectMatch && sagaMatch;
         });
-    }, [hubs, searchTerm, selectedGrade, selectedSubject, selectedTags]);
+    }, [hubs, searchTerm, selectedGrade, selectedSubject, selectedSagaFilter]);
 
     const uniqueSubjects = useMemo(() => {
         const subjects = new Set(hubs.map(h => h.subject));
@@ -308,6 +374,7 @@ export default function RoyalLibraryPage() {
         }
     };
 
+    let lastSagaName: string | undefined = '';
 
     return (
         <>
@@ -319,7 +386,7 @@ export default function RoyalLibraryPage() {
                     allHubs={hubs}
                 />
             )}
-             <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={teacherHubs} allLibraryHubs={hubs} teacher={teacher} />
+             <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={teacherHubs} allLibraryHubs={hubs} teacher={teacher} teacherSagas={teacherData?.sagas || []}/>
              <AlertDialog open={!!hubToDelete} onOpenChange={() => setHubToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -374,7 +441,7 @@ export default function RoyalLibraryPage() {
                                             <Label htmlFor="search-term">Search by Keyword</Label>
                                             <div className="relative">
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                                <Input id="search-term" placeholder="e.g., Photosynthesis, American Revolution" className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                                <Input id="search-term" placeholder="e.g., Photosynthesis" className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -397,9 +464,11 @@ export default function RoyalLibraryPage() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="tags-filter">Tags</Label>
-                                            <Input id="tags-filter" placeholder="e.g., fractions, reading" value={selectedTags} onChange={e => setSelectedTags(e.target.value)} />
+                                         <div className="space-y-2">
+                                            <Label>Saga Filter</Label>
+                                            <Button variant="outline" className="w-full justify-start" onClick={() => setSelectedSagaFilter(null)} disabled={!selectedSagaFilter}>
+                                                {selectedSagaFilter ? `Filtering: ${selectedSagaFilter}` : 'No Saga Filter'}
+                                            </Button>
                                         </div>
                                     </div>
                                 </Card>
@@ -419,46 +488,62 @@ export default function RoyalLibraryPage() {
                                     <CardDescription>No shared content matches your search. Try broadening your filters or be the first to share a quest!</CardDescription>
                                 </Card>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {filteredHubs.map(hub => (
-                                        <Card key={hub.id} className="flex flex-col bg-card/90 relative">
-                                            <CardHeader>
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1">
-                                                        <CardTitle>{hub.name}</CardTitle>
-                                                        <CardDescription>
-                                                            By <button onClick={() => handleCreatorClick(hub)} className="font-semibold underline hover:text-primary">{hub.originalTeacherName}</button>
-                                                        </CardDescription>
+                                <div className="space-y-8">
+                                    {filteredHubs.map((hub, index) => {
+                                        const showSagaHeader = hub.sagaName && hub.sagaName !== lastSagaName;
+                                        lastSagaName = hub.sagaName;
+                                        return (
+                                        <React.Fragment key={hub.id}>
+                                            {showSagaHeader && (
+                                                <div className="p-3 bg-primary/20 rounded-lg border-l-4 border-primary">
+                                                    <h2 className="text-2xl font-bold font-headline">{hub.sagaName}</h2>
+                                                    <p className="text-sm text-muted-foreground">A multi-part saga by {hub.originalTeacherName}</p>
+                                                </div>
+                                            )}
+                                            <Card className="flex flex-col bg-card/90">
+                                                <CardHeader>
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <CardTitle>{hub.name}</CardTitle>
+                                                             <button onClick={() => handleCreatorClick(hub)} className="text-sm text-left font-semibold text-muted-foreground underline hover:text-primary">
+                                                                By {hub.originalTeacherName}
+                                                            </button>
+                                                            {hub.sagaName && (
+                                                                <button onClick={() => setSelectedSagaFilter(hub.sagaName!)} className="text-xs block text-left text-blue-600 hover:underline">
+                                                                    Saga: {hub.sagaName}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <button onClick={() => handleCreatorClick(hub)}>
+                                                            <Avatar className="h-12 w-12">
+                                                                <AvatarImage src={hub.originalTeacherAvatarUrl} alt={hub.originalTeacherName} />
+                                                                <AvatarFallback>{hub.originalTeacherName?.charAt(0) || '?'}</AvatarFallback>
+                                                            </Avatar>
+                                                        </button>
                                                     </div>
-                                                    <button onClick={() => handleCreatorClick(hub)}>
-                                                        <Avatar className="h-12 w-12">
-                                                            <AvatarImage src={hub.originalTeacherAvatarUrl} alt={hub.originalTeacherName} />
-                                                            <AvatarFallback>{hub.originalTeacherName?.charAt(0) || '?'}</AvatarFallback>
-                                                        </Avatar>
-                                                    </button>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2 pt-2">
-                                                    <Badge>{hub.gradeLevel}</Badge>
-                                                    <Badge variant="secondary">{hub.subject}</Badge>
-                                                    {hub.tags.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent className="flex-grow">
-                                                <p className="text-sm text-muted-foreground">{hub.description}</p>
-                                            </CardContent>
-                                            <CardFooter className="flex justify-end gap-2">
-                                                {teacher?.uid === hub.originalTeacherId && (
-                                                    <Button variant="destructive" size="sm" onClick={() => setHubToDelete(hub)} disabled={isDeleting === hub.id}>
-                                                        {isDeleting === hub.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                                                    <div className="flex flex-wrap gap-2 pt-2">
+                                                        {hub.gradeLevels.map(grade => <Badge key={grade}>{grade}</Badge>)}
+                                                        <Badge variant="secondary">{hub.subject}</Badge>
+                                                        {hub.tags.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
+                                                    </div>
+                                                </CardHeader>
+                                                <CardContent className="flex-grow">
+                                                    <p className="text-sm text-muted-foreground">{hub.description}</p>
+                                                </CardContent>
+                                                <CardFooter className="flex justify-end gap-2">
+                                                    {teacher?.uid === hub.originalTeacherId && (
+                                                        <Button variant="destructive" size="sm" onClick={() => setHubToDelete(hub)} disabled={isDeleting === hub.id}>
+                                                            {isDeleting === hub.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                                                        </Button>
+                                                    )}
+                                                    <Button asChild variant="outline">
+                                                        <Link href={`/teacher/library/preview/${hub.id}`}>Preview</Link>
                                                     </Button>
-                                                )}
-                                                <Button asChild variant="outline">
-                                                    <Link href={`/teacher/library/preview/${hub.id}`}>Preview</Link>
-                                                </Button>
-                                                <Button>Import</Button>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
+                                                    <Button>Import</Button>
+                                                </CardFooter>
+                                            </Card>
+                                        </React.Fragment>
+                                    )})}
                                 </div>
                             )}
                         </div>
