@@ -10,7 +10,7 @@ import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image 
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { QuestHub, Chapter, Company } from '@/lib/quests';
+import type { QuestHub, Chapter, Company, LibraryHub } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
@@ -40,17 +40,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { shareHubsToLibrary } from '@/ai/flows/share-to-library';
+import { Badge } from '@/components/ui/badge';
 
 interface ShareDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   hubs: QuestHub[];
+  allLibraryHubs: LibraryHub[]; // Now accepts all library hubs
   teacher: User | null;
 }
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
-function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) {
+function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: ShareDialogProps) {
     const { toast } = useToast();
     const [selectedHubIds, setSelectedHubIds] = useState<string[]>([]);
     const [subject, setSubject] = useState('');
@@ -59,6 +61,11 @@ function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) 
     const [sagaType, setSagaType] = useState<'standalone' | 'ongoing'>('standalone');
     const [description, setDescription] = useState('');
     const [isSharing, setIsSharing] = useState(false);
+
+    // Correctly create a set of already shared hub IDs
+    const alreadySharedHubIds = useMemo(() => {
+        return new Set(allLibraryHubs.map(hub => hub.originalHubId));
+    }, [allLibraryHubs]);
 
     const handleShare = async () => {
         if (!teacher || selectedHubIds.length === 0 || !subject || !gradeLevel) {
@@ -101,7 +108,9 @@ function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) 
                     <div className="space-y-2">
                         <Label className="font-bold">Select Hubs to Share</Label>
                         <div className="max-h-48 overflow-y-auto space-y-2 rounded-md border p-2">
-                            {hubs.map(hub => (
+                            {hubs.map(hub => {
+                                const isShared = alreadySharedHubIds.has(hub.id);
+                                return (
                                 <div key={hub.id} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={`share-${hub.id}`}
@@ -109,10 +118,12 @@ function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) 
                                         onCheckedChange={(checked) => {
                                             setSelectedHubIds(prev => checked ? [...prev, hub.id] : prev.filter(id => id !== hub.id));
                                         }}
+                                        disabled={isShared}
                                     />
-                                    <Label htmlFor={`share-${hub.id}`}>{hub.name}</Label>
+                                    <Label htmlFor={`share-${hub.id}`} className={isShared ? 'text-muted-foreground' : ''}>{hub.name}</Label>
+                                    {isShared && <Badge variant="secondary">Shared</Badge>}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                      <div className="grid grid-cols-2 gap-4">
@@ -188,6 +199,7 @@ export default function QuestsPage() {
 
   // State for sharing
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [allLibraryHubs, setAllLibraryHubs] = useState<LibraryHub[]>([]); // New state
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -208,6 +220,7 @@ export default function QuestsPage() {
     const chaptersRef = collection(db, 'teachers', teacher.uid, 'chapters');
     const teacherRef = doc(db, 'teachers', teacher.uid);
     const companiesRef = collection(db, 'teachers', teacher.uid, 'companies');
+    const libraryHubsRef = collection(db, 'library_hubs'); // Fetch all library hubs
 
     const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
         const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
@@ -228,6 +241,10 @@ export default function QuestsPage() {
     const unsubCompanies = onSnapshot(companiesRef, (snapshot) => {
       setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
     });
+    
+    const unsubLibrary = onSnapshot(libraryHubsRef, (snapshot) => {
+        setAllLibraryHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LibraryHub)));
+    });
 
     setIsLoading(false);
 
@@ -236,6 +253,7 @@ export default function QuestsPage() {
         unsubChapters();
         unsubTeacher();
         unsubCompanies();
+        unsubLibrary();
     };
   }, [teacher]);
   
@@ -350,7 +368,7 @@ export default function QuestsPage() {
 
   return (
     <>
-      <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={sortedHubs} teacher={teacher} />
+      <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={sortedHubs} allLibraryHubs={allLibraryHubs} teacher={teacher} />
       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent>
           <DialogHeader>
