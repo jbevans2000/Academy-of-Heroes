@@ -285,7 +285,7 @@ export default function RoyalLibraryPage() {
         
         // Fetch library hubs
         const libraryHubsRef = collection(db, 'library_hubs');
-        const qLibrary = query(libraryHubsRef, orderBy('createdAt', 'desc'));
+        const qLibrary = query(libraryHubsRef, orderBy('createdAt', 'asc'));
         const unsubLibrary = onSnapshot(qLibrary, (snapshot) => {
             setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LibraryHub)));
             setIsLoading(false);
@@ -317,7 +317,7 @@ export default function RoyalLibraryPage() {
     }, [teacher, toast]);
 
     const filteredHubs = useMemo(() => {
-        let sortedHubs = [...hubs].sort((a, b) => (a.sagaName || 'zzzz').localeCompare(b.sagaName || 'zzzz') || a.hubOrder - b.hubOrder);
+        let sortedHubs = [...hubs]; // Already sorted by date from Firestore query
         
         return sortedHubs.filter(hub => {
             const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -535,7 +535,7 @@ export default function RoyalLibraryPage() {
                                                     <div className="flex flex-wrap gap-2 pt-2">
                                                         {hub.gradeLevels.map(grade => <Badge key={grade}>{grade}</Badge>)}
                                                         <Badge variant="secondary">{hub.subject}</Badge>
-                                                        {hub.tags.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
+                                                        {(hub.tags || []).map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
                                                     </div>
                                                 </CardHeader>
                                                 <CardContent className="flex-grow">

@@ -1,4 +1,5 @@
 
+
 export interface QuizQuestion {
     id: string;
     text: string;
@@ -92,11 +93,17 @@ export interface QuestCompletionRequest {
 
 // --- ROYAL LIBRARY TYPES ---
 
-export interface LibraryHub extends Omit<QuestHub, 'id'> {
+export interface LibraryHub {
+    id: string;
     originalHubId: string;
     originalTeacherId: string;
     originalTeacherName: string;
     originalTeacherAvatarUrl?: string;
+    name: string;
+    worldMapUrl: string;
+    coordinates: { x: number; y: number };
+    hubOrder: number;
+    storySummary?: string;
     subject: string;
     gradeLevels: string[];
     tags: string[];

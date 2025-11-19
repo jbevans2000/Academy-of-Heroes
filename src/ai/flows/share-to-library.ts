@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
@@ -9,7 +10,7 @@ interface ShareHubsInput {
     teacherUid: string;
     hubIds: string[];
     subject: string;
-    gradeLevels: string[]; // Changed from gradeLevel
+    gradeLevels: string[];
     tags: string[];
     sagaType: 'standalone' | 'ongoing';
     description: string;
@@ -58,7 +59,7 @@ export async function shareHubsToLibrary(input: ShareHubsInput): Promise<ShareHu
                 hubOrder: 0, // Not relevant for library
                 storySummary: '', // Can be generated later
                 subject,
-                gradeLevels, // Changed from gradeLevel
+                gradeLevels,
                 tags,
                 sagaType,
                 sagaName: sagaType === 'ongoing' ? sagaName : '',
