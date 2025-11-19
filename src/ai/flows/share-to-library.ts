@@ -5,6 +5,7 @@
 import { collection, doc, addDoc, getDocs, writeBatch, query, where, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { QuestHub, Chapter, LibraryHub, LibraryChapter } from '@/lib/quests';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ShareHubsInput {
     teacherUid: string;
