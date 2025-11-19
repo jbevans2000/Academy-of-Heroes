@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -497,7 +498,7 @@ export default function RoyalLibraryPage() {
                                 </Card>
                             ) : (
                                 <div className="space-y-8">
-                                    {filteredHubs.map((hub, index) => {
+                                    {filteredHubs.map((hub) => {
                                         const showSagaHeader = hub.sagaName && hub.sagaName !== lastSagaName;
                                         lastSagaName = hub.sagaName;
                                         return (
