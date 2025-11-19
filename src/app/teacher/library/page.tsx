@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { LibraryHub } from '@/lib/quests';
+import type { LibraryHub, QuestHub } from '@/lib/quests';
 
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -50,11 +50,12 @@ const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th
 interface ShareDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  hubs: LibraryHub[];
+  hubs: QuestHub[];
+  allLibraryHubs: LibraryHub[];
   teacher: User | null;
 }
 
-function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) {
+function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher }: ShareDialogProps) {
     const { toast } = useToast();
     const [selectedHubIds, setSelectedHubIds] = useState<string[]>([]);
     const [subject, setSubject] = useState('');
@@ -63,6 +64,10 @@ function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) 
     const [sagaType, setSagaType] = useState<'standalone' | 'ongoing'>('standalone');
     const [description, setDescription] = useState('');
     const [isSharing, setIsSharing] = useState(false);
+
+    const alreadySharedHubIds = useMemo(() => {
+        return allLibraryHubs.map(hub => hub.originalHubId);
+    }, [allLibraryHubs]);
 
     const handleShare = async () => {
         if (!teacher || selectedHubIds.length === 0 || !subject || !gradeLevel) {
@@ -105,7 +110,9 @@ function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) 
                     <div className="space-y-2">
                         <Label className="font-bold">Select Hubs to Share</Label>
                         <div className="max-h-48 overflow-y-auto space-y-2 rounded-md border p-2">
-                            {hubs.map(hub => (
+                            {hubs.map(hub => {
+                                const isShared = alreadySharedHubIds.includes(hub.id);
+                                return (
                                 <div key={hub.id} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={`share-${hub.id}`}
@@ -113,10 +120,12 @@ function ShareDialog({ isOpen, onOpenChange, hubs, teacher }: ShareDialogProps) 
                                         onCheckedChange={(checked) => {
                                             setSelectedHubIds(prev => checked ? [...prev, hub.id] : prev.filter(id => id !== hub.id));
                                         }}
+                                        disabled={isShared}
                                     />
-                                    <Label htmlFor={`share-${hub.id}`}>{hub.name}</Label>
+                                    <Label htmlFor={`share-${hub.id}`} className={isShared ? 'text-muted-foreground' : ''}>{hub.name}</Label>
+                                    {isShared && <Badge variant="secondary">Shared</Badge>}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                      <div className="grid grid-cols-2 gap-4">
@@ -188,7 +197,7 @@ export default function RoyalLibraryPage() {
     const [hubToDelete, setHubToDelete] = useState<LibraryHub | null>(null);
     
     // Hubs for sharing
-    const [teacherHubs, setTeacherHubs] = useState<LibraryHub[]>([]);
+    const [teacherHubs, setTeacherHubs] = useState<QuestHub[]>([]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -219,7 +228,7 @@ export default function RoyalLibraryPage() {
         // Fetch teacher's own hubs for the share dialog
         const teacherHubsRef = collection(db, 'teachers', teacher.uid, 'questHubs');
         const unsubTeacherHubs = onSnapshot(teacherHubsRef, (snapshot) => {
-            setTeacherHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LibraryHub)));
+            setTeacherHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)));
         });
 
         return () => {
@@ -310,7 +319,7 @@ export default function RoyalLibraryPage() {
                     allHubs={hubs}
                 />
             )}
-             <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={teacherHubs} teacher={teacher} />
+             <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={teacherHubs} allLibraryHubs={hubs} teacher={teacher} />
              <AlertDialog open={!!hubToDelete} onOpenChange={() => setHubToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
