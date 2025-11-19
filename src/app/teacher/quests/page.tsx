@@ -350,7 +350,7 @@ export default function QuestsPage() {
 
   return (
     <>
-      <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={hubs} teacher={teacher} />
+      <ShareDialog isOpen={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} hubs={sortedHubs} teacher={teacher} />
       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent>
           <DialogHeader>
