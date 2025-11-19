@@ -504,9 +504,9 @@ export default function RoyalLibraryPage() {
                                         return (
                                         <React.Fragment key={hub.id}>
                                             {showSagaHeader && (
-                                                <div className="p-3 bg-primary/30 rounded-lg border-l-4 border-primary">
+                                                <div className="p-3 bg-primary/80 backdrop-blur-sm text-primary-foreground rounded-lg border-l-4 border-primary">
                                                     <h2 className="text-2xl font-bold font-headline">{hub.sagaName}</h2>
-                                                    <p className="text-sm text-muted-foreground">A multi-part saga by {hub.originalTeacherName}</p>
+                                                    <p className="text-sm">A multi-part saga by {hub.originalTeacherName}</p>
                                                 </div>
                                             )}
                                             <Card className="flex flex-col bg-card/90">
