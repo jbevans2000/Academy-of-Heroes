@@ -19,6 +19,46 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 
+const ContentRenderer = ({ htmlContent }: { htmlContent: string }) => {
+    const [textPart, setTextPart] = useState('');
+    const [videoParts, setVideoParts] = useState<string[]>([]);
+
+    useEffect(() => {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+
+        const iframes = Array.from(tempDiv.getElementsByTagName('iframe'));
+        const videos = iframes.map(iframe => {
+            iframe.classList.add('w-full', 'h-full', 'rounded-lg', 'aspect-video');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mt-4';
+            wrapper.appendChild(iframe.cloneNode(true));
+            return wrapper.innerHTML;
+        });
+        
+        iframes.forEach(iframe => iframe.parentNode?.removeChild(iframe));
+
+        setTextPart(tempDiv.innerHTML);
+        setVideoParts(videos);
+    }, [htmlContent]);
+
+    return (
+        <div>
+            <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: textPart }} />
+            {videoParts.length > 0 && (
+                <div className="mt-6 space-y-4">
+                    <Separator />
+                    <h4 className="font-bold text-lg">Embedded Videos</h4>
+                    {videoParts.map((videoHtml, index) => (
+                        <div key={index} dangerouslySetInnerHTML={{ __html: videoHtml }} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 export default function LibraryPreviewPage() {
     const router = useRouter();
     const params = useParams();
@@ -147,15 +187,20 @@ export default function LibraryPreviewPage() {
                                                         <TabsTrigger value="lesson">Lesson</TabsTrigger>
                                                     </TabsList>
                                                     <TabsContent value="story" className="mt-4 p-4 border rounded-md bg-secondary/30">
-                                                        <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyContent || '' }} />
-                                                        {chapter.storyAdditionalContent && <div className="prose dark:prose-invert max-w-none mt-4 pt-4 border-t" dangerouslySetInnerHTML={{ __html: chapter.storyAdditionalContent }} />}
+                                                        <ContentRenderer htmlContent={chapter.storyContent || ''} />
+                                                        {chapter.storyAdditionalContent && (
+                                                            <>
+                                                                <Separator className="my-4" />
+                                                                <ContentRenderer htmlContent={chapter.storyAdditionalContent} />
+                                                            </>
+                                                        )}
                                                     </TabsContent>
                                                     <TabsContent value="lesson" className="mt-4 p-4 border rounded-md bg-secondary/30">
                                                         {chapter.lessonParts && chapter.lessonParts.length > 0 ? (
                                                             chapter.lessonParts.map((part, index) => (
                                                                 <div key={part.id}>
                                                                     {index > 0 && <Separator className="my-4" />}
-                                                                    <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: part.content }} />
+                                                                    <ContentRenderer htmlContent={part.content} />
                                                                 </div>
                                                             ))
                                                         ) : (
