@@ -19,9 +19,12 @@ interface UpdateProfileInput {
   name: string;
   schoolName: string;
   className: string;
-  characterName?: string; // New field
+  characterName?: string;
   contactEmail: string;
   address: string;
+  bio?: string;
+  subjectsTaught?: string[];
+  avatarUrl?: string;
 }
 
 export async function updateTeacherProfile(input: UpdateProfileInput): Promise<ActionResponse> {
@@ -31,9 +34,12 @@ export async function updateTeacherProfile(input: UpdateProfileInput): Promise<A
       name: input.name,
       schoolName: input.schoolName,
       className: input.className,
-      characterName: input.characterName || '', // Save character name
+      characterName: input.characterName || '',
       contactEmail: input.contactEmail,
       address: input.address,
+      bio: input.bio || '',
+      subjectsTaught: input.subjectsTaught || [],
+      avatarUrl: input.avatarUrl || '',
     });
     
     await logGameEvent(input.teacherUid, 'GAMEMASTER', 'Updated their profile information.');
@@ -109,3 +115,5 @@ export async function updateLevelingTable(input: UpdateLevelingTableInput): Prom
         return { success: false, error: e.message || 'Failed to save leveling curve.' };
     }
 }
+
+    

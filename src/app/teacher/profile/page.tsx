@@ -4,8 +4,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, db, app } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,10 +14,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, ArrowLeft, CreditCard } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, CreditCard, Upload } from 'lucide-react';
 import { updateTeacherProfile } from '@/ai/flows/manage-teacher';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TeacherProfile {
     name: string;
@@ -27,6 +30,7 @@ interface TeacherProfile {
     address?: string;
     bio?: string;
     subjectsTaught?: string[];
+    avatarUrl?: string;
 }
 
 export default function TeacherProfilePage() {
@@ -34,11 +38,16 @@ export default function TeacherProfilePage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [] });
-    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [] });
+    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [], avatarUrl: '' });
+    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '', bio: '', subjectsTaught: [], avatarUrl: '' });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isBeta, setIsBeta] = useState(false);
+
+    // New state for avatar upload
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -50,6 +59,7 @@ export default function TeacherProfilePage() {
                     const data = docSnap.data() as TeacherProfile;
                     setProfile(data);
                     setInitialProfile(data);
+                    setAvatarPreview(data.avatarUrl || null);
                 }
                 const settings = await getGlobalSettings();
                 setIsBeta(settings.isFeedbackPanelVisible ?? false);
@@ -71,12 +81,39 @@ export default function TeacherProfilePage() {
         setProfile(prev => ({ ...prev, subjectsTaught: value.split(',').map(s => s.trim()) }));
     }
 
-    const hasChanges = JSON.stringify(profile) !== JSON.stringify(initialProfile);
+    const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAvatarFile(file);
+            setAvatarPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const hasChanges = JSON.stringify(profile) !== JSON.stringify(initialProfile) || !!avatarFile;
 
     const handleSaveChanges = async () => {
-        if (!teacher || !hasChanges) return;
+        if (!teacher) return;
+        if (!hasChanges && !avatarFile) {
+            toast({ title: 'No Changes', description: 'There are no new updates to save.' });
+            return;
+        }
+
         setIsSaving(true);
+        let uploadedAvatarUrl = profile.avatarUrl;
+
         try {
+            // Step 1: Upload new avatar if it exists
+            if (avatarFile) {
+                setIsUploading(true);
+                const storage = getStorage(app);
+                const filePath = `teacher-avatars/${teacher.uid}/${uuidv4()}`;
+                const storageRef = ref(storage, filePath);
+                await uploadBytes(storageRef, avatarFile);
+                uploadedAvatarUrl = await getDownloadURL(storageRef);
+                setIsUploading(false);
+            }
+
+            // Step 2: Update the profile document
             const result = await updateTeacherProfile({
                 teacherUid: teacher.uid,
                 name: profile.name,
@@ -87,11 +124,16 @@ export default function TeacherProfilePage() {
                 address: profile.address || '',
                 bio: profile.bio || '',
                 subjectsTaught: profile.subjectsTaught || [],
+                avatarUrl: uploadedAvatarUrl,
             });
 
             if (result.success) {
                 toast({ title: "Profile Updated", description: "Your information has been successfully saved." });
-                setInitialProfile(profile);
+                // Update local state to reflect saved data
+                const updatedProfile = { ...profile, avatarUrl: uploadedAvatarUrl };
+                setProfile(updatedProfile);
+                setInitialProfile(updatedProfile);
+                setAvatarFile(null); // Clear the file input state
             } else {
                 throw new Error(result.error);
             }
@@ -100,6 +142,7 @@ export default function TeacherProfilePage() {
             toast({ variant: 'destructive', title: 'Save Failed', description: error.message || "An unexpected error occurred." });
         } finally {
             setIsSaving(false);
+            setIsUploading(false);
         }
     }
 
@@ -138,6 +181,24 @@ export default function TeacherProfilePage() {
                             <CardDescription>Update your personal and school information here.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                                <div className="space-y-2">
+                                    <Label>Profile Picture</Label>
+                                    <div className="w-32 h-32 relative rounded-full overflow-hidden border-4 border-primary">
+                                        {avatarPreview ? (
+                                            <Image src={avatarPreview} alt="Avatar Preview" layout="fill" className="object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-secondary flex items-center justify-center text-muted-foreground">
+                                                No Image
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="w-full">
+                                    <Label htmlFor="avatar-upload">Upload New Avatar</Label>
+                                    <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarFileChange} />
+                                </div>
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="name">Full Name</Label>
                                 <Input id="name" name="name" value={profile.name} onChange={handleInputChange} />
@@ -209,3 +270,5 @@ export default function TeacherProfilePage() {
         </div>
     )
 }
+
+    
