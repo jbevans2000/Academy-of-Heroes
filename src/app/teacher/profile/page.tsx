@@ -42,6 +42,7 @@ interface TeacherProfile {
     subjectsTaught?: string[];
     avatarUrl?: string;
     sagas?: string[];
+    accountType?: 'main' | 'co-teacher';
 }
 
 function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: { isOpen: boolean, onOpenChange: (open: boolean) => void, teacher: User | null, teacherName: string }) {
@@ -307,6 +308,8 @@ export default function TeacherProfilePage() {
             setIsUploading(false);
         }
     }
+    
+    const isCoTeacher = profile.accountType === 'co-teacher';
 
     if (isLoading) {
         return (
@@ -441,18 +444,21 @@ export default function TeacherProfilePage() {
                             </CardContent>
                         </Card>
                         
-                         <Card className="bg-card/90 backdrop-blur-sm">
-                            <CardHeader>
-                                <CardTitle>Co-Teacher Management</CardTitle>
-                                <CardDescription>Invite other teachers to help manage your guild.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Button onClick={() => setIsInviteDialogOpen(true)}>
-                                    <UserPlus className="mr-2 h-4 w-4" />
-                                    Invite a Co-Teacher
-                                </Button>
-                            </CardContent>
-                        </Card>
+                        {!isCoTeacher && (
+                             <Card className="bg-card/90 backdrop-blur-sm">
+                                <CardHeader>
+                                    <CardTitle>Co-Teacher Management</CardTitle>
+                                    <CardDescription>Invite other teachers to help manage your guild.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button onClick={() => setIsInviteDialogOpen(true)}>
+                                        <UserPlus className="mr-2 h-4 w-4" />
+                                        Invite a Co-Teacher
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+
 
                          <Card className="bg-card/90 backdrop-blur-sm">
                             <CardHeader>

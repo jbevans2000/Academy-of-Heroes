@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student, PendingStudent, ClassType, Company, QuestHub, Chapter } from '@/lib/data';
+import type { Student, PendingStudent, ClassType, Company, QuestHub, Chapter, Teacher } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -79,6 +79,8 @@ interface TeacherData {
     lastSeenBroadcastTimestamp?: any;
     isNewlyRegistered?: boolean;
     levelingTable?: { [level: number]: number };
+    accountType?: 'main' | 'co-teacher';
+    mainTeacherUid?: string;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company' | 'inMeditation';
@@ -189,53 +191,69 @@ export default function Dashboard() {
         const isAdmin = adminSnap.exists();
         const viewingTeacherId = searchParams.get('teacherId');
 
-        let currentTeacher: User;
+        let teacherIdToFetch: string | null = null;
+        let loggedInUser: User | null = null;
+
         if (isAdmin && viewingTeacherId) {
-            currentTeacher = { uid: viewingTeacherId } as User;
+            teacherIdToFetch = viewingTeacherId;
+            loggedInUser = { uid: viewingTeacherId } as User; // Create a mock user for data fetching
             setIsAdminPreview(true);
         } else {
-            currentTeacher = user;
-            setIsAdminPreview(false);
-        }
-        setTeacher(currentTeacher);
-
-        const checkWelcomeAndBroadcast = async () => {
-            const teacherRef = doc(db, 'teachers', currentTeacher.uid);
-            const teacherSnap = await getDoc(teacherRef);
-            if (!teacherSnap.exists()) return;
-            const teacherData = teacherSnap.data() as TeacherData;
-
-            if (teacherData.isNewlyRegistered) {
-                 const settings = await getGlobalSettings();
-                 if (settings.isFeedbackPanelVisible) {
-                    setShowBetaWelcomeDialog(true);
+            loggedInUser = user;
+            const userDocRef = doc(db, 'teachers', user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                const userData = userDocSnap.data();
+                if (userData.accountType === 'co-teacher') {
+                    teacherIdToFetch = userData.mainTeacherUid;
                 } else {
-                    setShowWelcomeDialog(true);
+                    teacherIdToFetch = user.uid;
                 }
-            } else if (!isAdminPreview) {
-                 const settings = await getGlobalSettings();
-                 if (settings.broadcastMessageId) {
-                     const lastSeenTimestamp = teacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
-                     const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
-                     const latestBroadcastQuery = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
-                     const latestBroadcastSnapshot = await getDocs(latestBroadcastQuery);
-
-                     if(!latestBroadcastSnapshot.empty) {
-                         const latestBroadcast = latestBroadcastSnapshot.docs[0].data();
-                         if (latestBroadcast.sentAt) {
-                            const latestTimestamp = latestBroadcast.sentAt.toDate();
-                            
-                            if (latestTimestamp > lastSeenTimestamp) {
-                                setBroadcastMessage(latestBroadcast.message);
-                                setIsBroadcastDialogOpen(true);
-                            }
-                         }
-                     }
-                 }
             }
         }
         
-        checkWelcomeAndBroadcast();
+        if (loggedInUser) {
+            setTeacher(loggedInUser);
+        }
+
+        if (teacherIdToFetch) {
+            const checkWelcomeAndBroadcast = async () => {
+                const teacherRef = doc(db, 'teachers', teacherIdToFetch!);
+                const teacherSnap = await getDoc(teacherRef);
+                if (!teacherSnap.exists()) return;
+                const teacherData = teacherSnap.data() as TeacherData;
+
+                if (teacherData.isNewlyRegistered) {
+                     const settings = await getGlobalSettings();
+                     if (settings.isFeedbackPanelVisible) {
+                        setShowBetaWelcomeDialog(true);
+                    } else {
+                        setShowWelcomeDialog(true);
+                    }
+                } else if (!isAdminPreview) {
+                     const settings = await getGlobalSettings();
+                     if (settings.broadcastMessageId) {
+                         const lastSeenTimestamp = teacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
+                         const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
+                         const latestBroadcastQuery = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
+                         const latestBroadcastSnapshot = await getDocs(latestBroadcastQuery);
+
+                         if(!latestBroadcastSnapshot.empty) {
+                             const latestBroadcast = latestBroadcastSnapshot.docs[0].data();
+                             if (latestBroadcast.sentAt) {
+                                const latestTimestamp = latestBroadcast.sentAt.toDate();
+                                
+                                if (latestTimestamp > lastSeenTimestamp) {
+                                    setBroadcastMessage(latestBroadcast.message);
+                                    setIsBroadcastDialogOpen(true);
+                                }
+                             }
+                         }
+                     }
+                }
+            }
+            checkWelcomeAndBroadcast();
+        }
     });
 
     return () => unsubscribe();
@@ -243,72 +261,84 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!teacher?.uid) return;
-
-    const teacherUid = teacher.uid;
     
-    const teacherRef = doc(db, 'teachers', teacherUid);
-    const unsubTeacher = onSnapshot(teacherRef, (teacherSnap) => {
-        if (teacherSnap.exists()) {
-            const data = teacherSnap.data() as TeacherData;
-            setTeacherData(data);
-            setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
-            setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
-            setIsReminderActive(data.isDailyReminderActive ?? true);
-            setRegenPercentage(data.dailyRegenPercentage ?? 0);
-            if (data.pendingCleanupBattleId) {
-                setTimeout(() => {
-                    handleClearAllBattleStatus(true);
-                }, 20000);
-            }
-        }
+    const getTeacherId = async () => {
+      const teacherDoc = await getDoc(doc(db, 'teachers', teacher.uid));
+      if (teacherDoc.exists() && teacherDoc.data().accountType === 'co-teacher') {
+        return teacherDoc.data().mainTeacherUid;
+      }
+      return teacher.uid;
+    }
+
+    let teacherUid: string;
+    
+    const setupListeners = async () => {
+      teacherUid = await getTeacherId();
+      
+      const teacherRef = doc(db, 'teachers', teacherUid);
+      const unsubTeacher = onSnapshot(teacherRef, (teacherSnap) => {
+          if (teacherSnap.exists()) {
+              const data = teacherSnap.data() as TeacherData;
+              setTeacherData(data);
+              setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
+              setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
+              setIsReminderActive(data.isDailyReminderActive ?? true);
+              setRegenPercentage(data.dailyRegenPercentage ?? 0);
+              if (data.pendingCleanupBattleId) {
+                  setTimeout(() => {
+                      handleClearAllBattleStatus(true);
+                  }, 20000);
+              }
+          }
+      });
+
+      const studentsQuery = collection(db, "teachers", teacherUid, "students");
+      const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
+          const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+          setStudents(studentData);
+          setIsLoading(false);
+      });
+      
+      const pendingStudentsQuery = collection(db, "teachers", teacherUid, "pendingStudents");
+      const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
+          setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
+      });
+      
+      const companiesQuery = collection(db, 'teachers', teacherUid, 'companies');
+      const companiesUnsubscribe = onSnapshot(companiesQuery, (snapshot) => {
+          const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+          setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
+      });
+
+      const presenceRef = doc(db, 'teachers', teacherUid, 'presence', 'online');
+      const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
+          const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
+          const uids = Object.keys(presenceData).filter(uid => presenceData[uid]?.status === 'online');
+          setOnlineUids(uids);
+      });
+      
+      const hubsQuery = query(collection(db, 'teachers', teacherUid, 'questHubs'), orderBy('hubOrder'));
+      const hubsUnsubscribe = onSnapshot(hubsQuery, (snapshot) => {
+          setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)))
+      });
+      
+      const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'));
+      const chaptersUnsubscribe = onSnapshot(chaptersQuery, (snapshot) => {
+          setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
+      });
+
+      return [unsubTeacher, studentsUnsubscribe, pendingUnsubscribe, companiesUnsubscribe, hubsUnsubscribe, chaptersUnsubscribe, unsubPresence];
+    }
+    
+    let unsubscribers: any[] = [];
+    setupListeners().then(unsubs => {
+      unsubscribers = unsubs;
     });
 
-    const studentsQuery = collection(db, "teachers", teacherUid, "students");
-    const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-        const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-        setStudents(studentData);
-        setIsLoading(false);
-    });
-    
-    const pendingStudentsQuery = collection(db, "teachers", teacherUid, "pendingStudents");
-    const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
-        setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
-    });
-    
-    const companiesQuery = collection(db, 'teachers', teacherUid, 'companies');
-    const companiesUnsubscribe = onSnapshot(companiesQuery, (snapshot) => {
-        const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-        setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
-    });
-
-    const presenceRef = doc(db, 'teachers', teacher.uid, 'presence', 'online');
-    const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
-        const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
-        const uids = Object.keys(presenceData).filter(uid => presenceData[uid]?.status === 'online');
-        setOnlineUids(uids);
-    });
-    
-    const hubsQuery = query(collection(db, 'teachers', teacherUid, 'questHubs'), orderBy('hubOrder'));
-    const hubsUnsubscribe = onSnapshot(hubsQuery, (snapshot) => {
-        setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)))
-    });
-    
-    const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'));
-    const chaptersUnsubscribe = onSnapshot(chaptersQuery, (snapshot) => {
-        setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
-    });
-
-
-    // Cleanup listeners on unmount
     return () => {
-        unsubTeacher();
-        studentsUnsubscribe();
-        pendingUnsubscribe();
-        companiesUnsubscribe();
-        hubsUnsubscribe();
-        chaptersUnsubscribe();
-        unsubPresence();
+      unsubscribers.forEach(unsub => unsub && unsub());
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teacher]);
 
 
@@ -712,6 +742,7 @@ export default function Dashboard() {
     const visibleStudentUids = getVisibleStudentUids();
     const allVisibleSelected = visibleStudentUids.length > 0 && visibleStudentUids.every(uid => selectedStudents.includes(uid));
 
+    const isCoTeacher = teacherData?.accountType === 'co-teacher';
 
   if (isLoading || !teacher) {
     return (
@@ -810,7 +841,7 @@ export default function Dashboard() {
                 
                 <div className="mb-4 bg-white/90 p-4 rounded-lg shadow-md">
                     <h1 className="text-3xl font-bold">{teacherData?.className || 'The Guild Leader\'s Dais'}</h1>
-                    {teacherData?.classCode && (
+                    {teacherData?.classCode && !isCoTeacher && (
                         <div className="flex items-center gap-2 mt-2">
                             <p className="text-muted-foreground">Your Guild Code:</p>
                             <span className="font-mono text-lg font-bold bg-primary/10 px-2 py-1 rounded-md">{teacherData.classCode}</span>
@@ -898,11 +929,11 @@ export default function Dashboard() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                             <DropdownMenuItem onClick={() => router.push('/teacher/bulk-add')}>
+                             <DropdownMenuItem onClick={() => router.push('/teacher/bulk-add')} disabled={isCoTeacher}>
                                 <Users className="mr-2 h-4 w-4" />
                                 <span>Bulk Add Students</span>
                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => router.push('/teacher/data-management')}>
+                             <DropdownMenuItem onClick={() => router.push('/teacher/data-management')} disabled={isCoTeacher}>
                                 <UserX className="mr-2 h-4 w-4" />
                                 <span>Retire Heroes</span>
                             </DropdownMenuItem>
@@ -1287,5 +1318,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
