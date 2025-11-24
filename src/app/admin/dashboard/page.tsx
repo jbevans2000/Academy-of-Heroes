@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where, Timestamp, writeBatch } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -64,7 +64,7 @@ import { AdminMessageCenter } from '@/components/admin/admin-message-center';
 import PayPalTestButton from '@/components/admin/paypal-test-button';
 import { Switch } from '@/components/ui/switch';
 import { AdminSdkTester } from '@/components/admin/admin-sdk-tester';
-import { deleteTeacherData } from '@/ai/flows/admin-actions';
+import { deleteTeacher as deleteTeacherData, deleteStudentData as deleteStudentAuthAndData } from '@/ai/flows/admin-actions';
 
 
 type SortDirection = 'asc' | 'desc';
@@ -201,18 +201,8 @@ export default function AdminDashboardPage() {
 
     // Client-side data deletion functions
     const deleteStudentData = async (teacherUid: string, studentUid: string) => {
-        const batch = writeBatch(db);
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-        const subcollections = ['messages', 'avatarLog'];
-        for (const sub of subcollections) {
-            const subRef = collection(studentRef, sub);
-            const snapshot = await getDocs(subRef);
-            snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        }
-        batch.delete(studentRef);
-        const globalStudentRef = doc(db, 'students', studentUid);
-        batch.delete(globalStudentRef);
-        await batch.commit();
+        // This function is being replaced by the backend version for consistency
+        await deleteStudentAuthAndData({teacherUid, studentUid});
     };
 
     const fetchTeacherData = useCallback(async () => {
@@ -740,8 +730,8 @@ export default function AdminDashboardPage() {
                 await deleteTeacherData(userToDelete.data.id as string);
                 toast({ title: 'Teacher Data & Account Deleted', description: "The teacher's Firestore data and login account have been removed." });
             } else {
-                await deleteStudentData((userToDelete.data as Student).teacherId, userToDelete.data.uid);
-                toast({ title: 'Student Data Deleted', description: "The student's Firestore data has been removed. Their login account remains." });
+                await deleteStudentAuthAndData({teacherUid: (userToDelete.data as Student).teacherId, studentUid: userToDelete.data.uid});
+                toast({ title: 'Student Data & Account Deleted', description: "The student's Firestore data and their login account have been removed." });
             }
             await handleRefreshData(); // Refresh all data after deletion
         } catch (error: any) {
