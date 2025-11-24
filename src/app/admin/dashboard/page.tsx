@@ -22,7 +22,7 @@ import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-k
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { downloadAndZipHostingFiles } from '@/ai/flows/download-hosting-files';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power, Users, Archive, DatabaseZap } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power, Users, Archive, DatabaseZap, CornerDownRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -64,6 +64,8 @@ import { AdminMessageCenter } from '@/components/admin/admin-message-center';
 import PayPalTestButton from '@/components/admin/paypal-test-button';
 import { Switch } from '@/components/ui/switch';
 import { AdminSdkTester } from '@/components/admin/admin-sdk-tester';
+import { deleteTeacherData } from '@/ai/flows/admin-actions';
+
 
 type SortDirection = 'asc' | 'desc';
 type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt' | 'contactEmail';
@@ -80,6 +82,12 @@ interface Teacher {
     studentCount: number;
     createdAt: Date | null;
     hasUnreadAdminMessages?: boolean;
+    accountType?: 'main' | 'co-teacher';
+    mainTeacherUid?: string;
+}
+
+interface HierarchicalTeacher extends Teacher {
+    coTeachers: Teacher[];
 }
 
 interface Student {
@@ -207,24 +215,6 @@ export default function AdminDashboardPage() {
         await batch.commit();
     };
 
-    const deleteTeacherData = async (teacherUid: string) => {
-        const batch = writeBatch(db);
-        const teacherRef = doc(db, 'teachers', teacherUid);
-        const subcollections = [
-            'students', 'pendingStudents', 'questHubs', 'chapters', 'bossBattles',
-            'savedBattles', 'groupBattleSummaries', 'boons', 'pendingBoonRequests',
-            'boonTransactions', 'gameLog', 'wheelOfFateEvents', 'duelQuestionSections',
-            'companies', 'missions', 'guildHallMessages'
-        ];
-        for (const sub of subcollections) {
-            const subRef = collection(teacherRef, sub);
-            const snapshot = await getDocs(subRef);
-            snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        }
-        batch.delete(teacherRef);
-        await batch.commit();
-    };
-
     const fetchTeacherData = useCallback(async () => {
         const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
         const snapshot = await getDocs(teachersQuery);
@@ -243,6 +233,8 @@ export default function AdminDashboardPage() {
                 studentCount: studentsSnapshot.size,
                 createdAt: teacherInfo.createdAt?.toDate() || null,
                 hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
+                accountType: teacherInfo.accountType,
+                mainTeacherUid: teacherInfo.mainTeacherUid,
             });
         }
         setTeachers(teachersData);
@@ -415,9 +407,28 @@ export default function AdminDashboardPage() {
     }, [router]);
 
     const sortedTeachers = useMemo(() => {
-        let sortableItems = [...teachers];
+        const mainTeachers: HierarchicalTeacher[] = [];
+        const coTeachersMap: Record<string, Teacher[]> = {};
+
+        teachers.forEach(t => {
+            if (t.accountType === 'co-teacher' && t.mainTeacherUid) {
+                if (!coTeachersMap[t.mainTeacherUid]) {
+                    coTeachersMap[t.mainTeacherUid] = [];
+                }
+                coTeachersMap[t.mainTeacherUid].push(t);
+            } else {
+                mainTeachers.push({ ...t, coTeachers: [] });
+            }
+        });
+
+        mainTeachers.forEach(mainT => {
+            if (coTeachersMap[mainT.id]) {
+                mainT.coTeachers = coTeachersMap[mainT.id].sort((a,b) => a.name.localeCompare(b.name));
+            }
+        });
+        
         if (teacherSortConfig !== null) {
-            sortableItems.sort((a, b) => {
+            mainTeachers.sort((a, b) => {
                 const aValue = a[teacherSortConfig.key] || '';
                 const bValue = b[teacherSortConfig.key] || '';
                 if (aValue < bValue) return teacherSortConfig.direction === 'asc' ? -1 : 1;
@@ -425,7 +436,7 @@ export default function AdminDashboardPage() {
                 return 0;
             });
         }
-        return sortableItems;
+        return mainTeachers;
     }, [teachers, teacherSortConfig]);
 
     const sortedStudentsByTeacher = useMemo(() => {
@@ -726,8 +737,8 @@ export default function AdminDashboardPage() {
         setIsDeletingUser(true);
         try {
             if (userToDelete.type === 'teacher') {
-                await deleteTeacherData(userToDelete.data.id!);
-                toast({ title: 'Teacher Data Deleted', description: "The teacher's Firestore data has been removed. Their login account remains." });
+                await deleteTeacherData(userToDelete.data.id as string);
+                toast({ title: 'Teacher Data & Account Deleted', description: "The teacher's Firestore data and login account have been removed." });
             } else {
                 await deleteStudentData((userToDelete.data as Student).teacherId, userToDelete.data.uid);
                 toast({ title: 'Student Data Deleted', description: "The student's Firestore data has been removed. Their login account remains." });
@@ -742,7 +753,7 @@ export default function AdminDashboardPage() {
     };
 
     const handleOpenMessageCenter = (teacherId?: string) => {
-        const teacher = teacherId ? sortedTeachers.find(t => t.id === teacherId) : null;
+        const teacher = teacherId ? teachers.find(t => t.id === teacherId) : null;
         setInitialTeacherToView(teacher || null);
         setIsMessageCenterOpen(true);
     };
@@ -822,7 +833,7 @@ export default function AdminDashboardPage() {
                 isOpen={isMessageCenterOpen}
                 onOpenChange={setIsMessageCenterOpen}
                 admin={user}
-                teachers={sortedTeachers}
+                teachers={teachers}
                 initialTeacher={initialTeacherToView}
                 onConversationSelect={(teacher) => setInitialTeacherToView(teacher as Teacher)}
             />
@@ -1065,9 +1076,7 @@ export default function AdminDashboardPage() {
                     </Collapsible>
 
 
-                    {/* Direct Prompt Interface */}
-                    <DirectPromptInterface />
-
+                    {/* All Guilds Panel */}
                     <Collapsible>
                         <Card>
                             <CollapsibleTrigger asChild>
@@ -1121,25 +1130,48 @@ export default function AdminDashboardPage() {
                                             </TableHeader>
                                             <TableBody>
                                                 {sortedTeachers.map((teacher) => (
-                                                    <TableRow key={teacher.id}>
-                                                        <TableCell>
-                                                            <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
-                                                                {teacher.className}
-                                                            </Link>
-                                                        </TableCell>
-                                                        <TableCell>{teacher.name}</TableCell>
-                                                        {columnVisibility.teacherUid && <TableCell className="font-mono text-xs">{teacher.id}</TableCell>}
-                                                        {columnVisibility.authEmail && <TableCell>{teacher.email}</TableCell>}
-                                                        {columnVisibility.contactEmail && <TableCell>{teacher.contactEmail}</TableCell>}
-                                                        {columnVisibility.school && <TableCell>{teacher.schoolName}</TableCell>}
-                                                        {columnVisibility.studentCount && <TableCell>{teacher.studentCount}</TableCell>}
-                                                        {columnVisibility.createdAt && <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>}
-                                                        <TableCell>
-                                                            <Button variant="ghost" size="icon" onClick={() => setUserToDelete({ type: 'teacher', data: teacher })}>
-                                                                <Trash2 className="h-4 w-4 text-destructive"/>
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
+                                                    <React.Fragment key={teacher.id}>
+                                                        <TableRow>
+                                                            <TableCell>
+                                                                <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
+                                                                    {teacher.className}
+                                                                </Link>
+                                                            </TableCell>
+                                                            <TableCell>{teacher.name}</TableCell>
+                                                            {columnVisibility.teacherUid && <TableCell className="font-mono text-xs">{teacher.id}</TableCell>}
+                                                            {columnVisibility.authEmail && <TableCell>{teacher.email}</TableCell>}
+                                                            {columnVisibility.contactEmail && <TableCell>{teacher.contactEmail}</TableCell>}
+                                                            {columnVisibility.school && <TableCell>{teacher.schoolName}</TableCell>}
+                                                            {columnVisibility.studentCount && <TableCell>{teacher.studentCount}</TableCell>}
+                                                            {columnVisibility.createdAt && <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>}
+                                                            <TableCell>
+                                                                <Button variant="ghost" size="icon" onClick={() => setUserToDelete({ type: 'teacher', data: teacher })}>
+                                                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {teacher.coTeachers.map(coTeacher => (
+                                                            <TableRow key={coTeacher.id} className="bg-muted/50">
+                                                                <TableCell colSpan={2} className="pl-8">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CornerDownRight className="h-4 w-4 text-muted-foreground" />
+                                                                        <span className="font-medium text-muted-foreground">{coTeacher.name} (Co-Teacher)</span>
+                                                                    </div>
+                                                                </TableCell>
+                                                                {columnVisibility.teacherUid && <TableCell className="font-mono text-xs">{coTeacher.id}</TableCell>}
+                                                                {columnVisibility.authEmail && <TableCell>{coTeacher.email}</TableCell>}
+                                                                {columnVisibility.contactEmail && <TableCell>{coTeacher.contactEmail}</TableCell>}
+                                                                {columnVisibility.school && <TableCell></TableCell>}
+                                                                {columnVisibility.studentCount && <TableCell></TableCell>}
+                                                                {columnVisibility.createdAt && <TableCell>{coTeacher.createdAt ? format(coTeacher.createdAt, 'PP') : 'N/A'}</TableCell>}
+                                                                <TableCell>
+                                                                    <Button variant="ghost" size="icon" onClick={() => setUserToDelete({ type: 'teacher', data: coTeacher })}>
+                                                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </React.Fragment>
                                                 ))}
                                             </TableBody>
                                     </Table>
@@ -1361,17 +1393,17 @@ export default function AdminDashboardPage() {
                     <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Firestore Data?</AlertDialogTitle>
+                                <AlertDialogTitle>Delete Firestore Data & Auth Account?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                     This will permanently delete all Firestore game data for{' '}
-                                    <strong>{userToDelete && (userToDelete.type === 'teacher' ? (userToDelete.data as Teacher).name : (userToDelete.data as Student).characterName)}</strong>.
-                                    Their login account will remain, but they will be removed from the game. This cannot be undone.
+                                    <strong>{userToDelete && (userToDelete.type === 'teacher' ? (userToDelete.data as Teacher).name : (userToDelete.data as Student).characterName)}</strong>
+                                    AND their login account. This cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel disabled={isDeletingUser}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleDeleteUser} disabled={isDeletingUser} className="bg-destructive hover:bg-destructive/90">
-                                    {isDeletingUser ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Delete Data Only'}
+                                    {isDeletingUser ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Delete Everything'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
