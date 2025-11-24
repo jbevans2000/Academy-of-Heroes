@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen, Share } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen, Share, EyeOff } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc, query, orderBy, where } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -234,7 +234,7 @@ function ShareDialog({ isOpen, onOpenChange, hubs, allLibraryHubs, teacher, teac
                         <RadioGroup value={contentToShare} onValueChange={(v) => setContentToShare(v as any)} className="flex gap-4">
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="both" id="share-both" />
-                                <Label htmlFor="share-both">Story & Lesson</Label>
+                                <Label htmlFor="share-both">Story &amp; Lesson</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="story" id="share-story" />
@@ -289,6 +289,41 @@ export default function QuestsPage() {
   // State for sharing
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [allLibraryHubs, setAllLibraryHubs] = useState<LibraryHub[]>([]);
+
+  // State for hiding hubs
+  const [showHiddenHubs, setShowHiddenHubs] = useState(false);
+  const [hiddenHubIds, setHiddenHubIds] = useState<string[]>([]);
+  const localStorageKey = useMemo(() => teacher ? `hiddenHubs-${teacher.uid}` : null, [teacher]);
+
+  useEffect(() => {
+    if (!localStorageKey) return;
+    try {
+        const storedHiddenIds = localStorage.getItem(localStorageKey);
+        if (storedHiddenIds) {
+            setHiddenHubIds(JSON.parse(storedHiddenIds));
+        }
+    } catch (e) {
+        console.error("Could not parse hidden hubs from localStorage", e);
+    }
+  }, [localStorageKey]);
+
+  useEffect(() => {
+    if (!localStorageKey) return;
+    try {
+        localStorage.setItem(localStorageKey, JSON.stringify(hiddenHubIds));
+    } catch(e) {
+        console.error("Could not save hidden hubs to localStorage", e);
+    }
+  }, [hiddenHubIds, localStorageKey]);
+  
+  const toggleHubVisibility = (hubId: string) => {
+    setHiddenHubIds(prev => 
+        prev.includes(hubId) 
+            ? prev.filter(id => id !== hubId) 
+            : [...prev, hubId]
+    );
+  };
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -576,6 +611,7 @@ export default function QuestsPage() {
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   opacity: 0.5,
+                  backgroundAttachment: 'fixed',
               }}
             />
         )}
@@ -607,6 +643,13 @@ export default function QuestsPage() {
           </div>
         </div>
         
+         <div className="mb-4">
+             <Button variant="outline" onClick={() => setShowHiddenHubs(prev => !prev)}>
+                {showHiddenHubs ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                {showHiddenHubs ? 'Hide Hidden Hubs' : 'Show Hidden Hubs'}
+            </Button>
+         </div>
+
         {isLoading ? (
              <div className="space-y-4">
                 <Skeleton className="h-24 w-full" />
@@ -635,7 +678,7 @@ export default function QuestsPage() {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="multiple" className="w-full">
-                        {sortedHubs.map(hub => {
+                        {sortedHubs.filter(hub => showHiddenHubs || !hiddenHubIds.includes(hub.id)).map(hub => {
                             const hubChapters = chapters.filter(c => c.hubId === hub.id).sort((a,b) => a.chapterNumber - b.chapterNumber);
                             const assignedCompanies = hub.assignedCompanyIds?.map(id => companies.find(c => c.id === id)?.name).filter(Boolean);
                             const visibilityText = (hub.isVisibleToAll === false && assignedCompanies && assignedCompanies.length > 0)
@@ -653,6 +696,10 @@ export default function QuestsPage() {
                                             </div>
                                         </AccordionTrigger>
                                         <div className="flex items-center gap-4 pr-4">
+                                            <Button variant="outline" size="sm" onClick={() => toggleHubVisibility(hub.id)}>
+                                                {hiddenHubIds.includes(hub.id) ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                                                {hiddenHubIds.includes(hub.id) ? 'Unhide' : 'Hide'}
+                                            </Button>
                                             <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/hub/edit/${hub.id}`)}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Hub
                                             </Button>
