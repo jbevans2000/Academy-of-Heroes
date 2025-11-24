@@ -3,7 +3,7 @@
 /**
  * @fileOverview A secure, server-side flow for creating a co-teacher account.
  */
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAdminAuth } from '@/lib/firebaseAdmin';
 
@@ -13,6 +13,7 @@ interface CreateCoTeacherInput {
   inviteeName: string;
   inviteeEmail: string;
   password: string;
+  permissions: any; // Permissions object
 }
 
 interface ActionResponse {
@@ -22,9 +23,9 @@ interface ActionResponse {
 }
 
 export async function createCoTeacherAccount(input: CreateCoTeacherInput): Promise<ActionResponse> {
-  const { mainTeacherUid, mainTeacherName, inviteeName, inviteeEmail, password } = input;
+  const { mainTeacherUid, mainTeacherName, inviteeName, inviteeEmail, password, permissions } = input;
 
-  if (!mainTeacherUid || !mainTeacherName || !inviteeName || !inviteeEmail || !password) {
+  if (!mainTeacherUid || !mainTeacherName || !inviteeName || !inviteeEmail || !password || !permissions) {
     return { success: false, error: 'Missing required information.' };
   }
   if (password.length < 6) {
@@ -60,6 +61,7 @@ export async function createCoTeacherAccount(input: CreateCoTeacherInput): Promi
         schoolName: mainTeacherData.schoolName || '',
         className: mainTeacherData.className || '',
         levelingTable: mainTeacherData.levelingTable || {},
+        permissions: permissions, // Save the permissions object
         createdAt: serverTimestamp(),
     });
     
@@ -73,4 +75,27 @@ export async function createCoTeacherAccount(input: CreateCoTeacherInput): Promi
     }
     return { success: false, error: errorMessage };
   }
+}
+
+interface UpdatePermissionsInput {
+    coTeacherUid: string;
+    permissions: any;
+}
+
+export async function updateCoTeacherPermissions(input: UpdatePermissionsInput): Promise<ActionResponse> {
+    const { coTeacherUid, permissions } = input;
+    if (!coTeacherUid || !permissions) {
+        return { success: false, error: 'Missing required information.' };
+    }
+    
+    try {
+        const coTeacherRef = doc(db, 'teachers', coTeacherUid);
+        await updateDoc(coTeacherRef, {
+            permissions: permissions
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating co-teacher permissions:", error);
+        return { success: false, error: error.message || 'Failed to update permissions.' };
+    }
 }

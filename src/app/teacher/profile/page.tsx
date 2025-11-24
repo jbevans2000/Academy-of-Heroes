@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, ArrowLeft, CreditCard, Upload, PlusCircle, Trash2, UserPlus, Copy } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, CreditCard, Upload, PlusCircle, Trash2, UserPlus, Copy, Edit } from 'lucide-react';
 import { updateTeacherProfile } from '@/ai/flows/manage-teacher';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,7 +40,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { createCoTeacherAccount } from '@/ai/flows/create-co-teacher';
+import { createCoTeacherAccount, updateCoTeacherPermissions } from '@/ai/flows/create-co-teacher';
 import { deleteTeacher } from '@/ai/flows/admin-actions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -61,11 +61,6 @@ interface TeacherProfile {
     permissions?: Permissions;
 }
 
-interface CoTeacher extends TeacherProfile {
-    id: string;
-    email: string;
-}
-
 const allPermissions = {
     canEditProfile: { label: "Edit Profile", default: true },
     canManageQuests: { label: "Manage Quests & Chapters", default: true },
@@ -81,6 +76,11 @@ const allPermissions = {
 };
 
 type Permissions = Record<keyof typeof allPermissions, boolean>;
+
+interface CoTeacher extends TeacherProfile {
+    id: string;
+    email: string;
+}
 
 
 function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: { isOpen: boolean, onOpenChange: (open: boolean) => void, teacher: User | null, teacherName: string }) {
@@ -224,6 +224,83 @@ function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: {
     );
 }
 
+function EditPermissionsDialog({ isOpen, onOpenChange, coTeacher }: { isOpen: boolean, onOpenChange: (open: boolean) => void, coTeacher: CoTeacher | null }) {
+    const { toast } = useToast();
+    const [permissions, setPermissions] = useState<Permissions | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (coTeacher?.permissions) {
+            setPermissions(coTeacher.permissions);
+        } else if (coTeacher) {
+            // If permissions object is missing, initialize with defaults
+            const defaultPermissions = Object.entries(allPermissions).reduce((acc, [key, { default: defaultValue }]) => {
+                (acc as any)[key] = defaultValue;
+                return acc;
+            }, {} as Permissions);
+            setPermissions(defaultPermissions);
+        }
+    }, [coTeacher]);
+
+    const handlePermissionChange = (key: keyof Permissions, checked: boolean) => {
+        setPermissions(prev => prev ? { ...prev, [key]: checked } : null);
+    };
+
+    const handleSave = async () => {
+        if (!coTeacher || !permissions) return;
+        setIsSaving(true);
+        try {
+            const result = await updateCoTeacherPermissions({ coTeacherUid: coTeacher.id, permissions });
+            if (result.success) {
+                toast({ title: 'Permissions Updated', description: `Permissions for ${coTeacher.name} have been saved.` });
+                onOpenChange(false);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!coTeacher || !permissions) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>Edit Permissions for {coTeacher.name}</DialogTitle>
+                    <DialogDescription>
+                        Grant or revoke access to specific features for this co-teacher.
+                    </DialogDescription>
+                </DialogHeader>
+                 <ScrollArea className="h-72 w-full rounded-md border p-4">
+                    <div className="space-y-4">
+                        {Object.entries(allPermissions).map(([key, { label }]) => (
+                            <div key={key} className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={`edit-perm-${key}`}
+                                    checked={permissions[key as keyof Permissions]}
+                                    onCheckedChange={(checked) => handlePermissionChange(key as keyof Permissions, !!checked)}
+                                />
+                                <Label htmlFor={`edit-perm-${key}`}>{label}</Label>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Permissions
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function TeacherProfilePage() {
     const router = useRouter();
     const { toast } = useToast();
@@ -242,10 +319,14 @@ export default function TeacherProfilePage() {
     const [newSagaName, setNewSagaName] = useState('');
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     
-    // New state for managing co-teachers
+    // State for managing co-teachers
     const [coTeachers, setCoTeachers] = useState<CoTeacher[]>([]);
     const [coTeacherToDelete, setCoTeacherToDelete] = useState<CoTeacher | null>(null);
     const [isDeletingCoTeacher, setIsDeletingCoTeacher] = useState(false);
+    
+    // State for editing co-teacher permissions
+    const [editingCoTeacher, setEditingCoTeacher] = useState<CoTeacher | null>(null);
+    const [isEditPermsDialogOpen, setIsEditPermsDialogOpen] = useState(false);
 
 
     useEffect(() => {
@@ -275,13 +356,13 @@ export default function TeacherProfilePage() {
 
     // Fetch co-teachers
     useEffect(() => {
-        if (isMainTeacher && teacher) {
-            const q = query(collection(db, 'teachers'), where('mainTeacherUid', '==', teacher.uid));
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                setCoTeachers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CoTeacher)));
-            });
-            return () => unsubscribe();
-        }
+        if (!isMainTeacher || !teacher) return;
+        
+        const q = query(collection(db, 'teachers'), where('mainTeacherUid', '==', teacher.uid));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setCoTeachers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CoTeacher)));
+        });
+        return () => unsubscribe();
     }, [isMainTeacher, teacher]);
     
     const handleDeleteCoTeacher = async () => {
@@ -410,6 +491,7 @@ export default function TeacherProfilePage() {
     return (
         <>
             <InviteCoTeacherDialog isOpen={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} teacher={teacher} teacherName={profile.name} />
+            <EditPermissionsDialog isOpen={isEditPermsDialogOpen} onOpenChange={setIsEditPermsDialogOpen} coTeacher={editingCoTeacher} />
              <AlertDialog open={!!coTeacherToDelete} onOpenChange={() => setCoTeacherToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -564,7 +646,16 @@ export default function TeacherProfilePage() {
                                                         <p className="font-medium">{ct.name}</p>
                                                         <p className="text-sm text-muted-foreground">{ct.email}</p>
                                                     </div>
-                                                    <Button variant="destructive" size="sm" onClick={() => setCoTeacherToDelete(ct)}>Remove</Button>
+                                                     <div className="flex items-center gap-2">
+                                                        <Button variant="outline" size="sm" onClick={() => { setEditingCoTeacher(ct); setIsEditPermsDialogOpen(true); }}>
+                                                            <Edit className="mr-2 h-4 w-4"/>
+                                                            Permissions
+                                                        </Button>
+                                                        <Button variant="destructive" size="sm" onClick={() => setCoTeacherToDelete(ct)}>
+                                                            <UserX className="mr-2 h-4 w-4" />
+                                                            Remove
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             ))
                                         ) : (
