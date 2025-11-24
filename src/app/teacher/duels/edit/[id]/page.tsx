@@ -84,6 +84,7 @@ export default function EditDuelSectionPage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [teacherUidToUse, setTeacherUidToUse] = useState<string | null>(null);
     const [section, setSection] = useState<DuelQuestionSection | null>(null);
     const [questions, setQuestions] = useState<DuelQuestion[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -106,11 +107,31 @@ export default function EditDuelSectionPage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    useEffect(() => {
+        if (!teacher) return;
+        
+        let isMounted = true;
+        const determineTeacherUid = async () => {
+            const teacherDocRef = doc(db, 'teachers', teacher.uid);
+            const teacherDocSnap = await getDoc(teacherDocRef);
+            if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                if (isMounted) setTeacherUidToUse(teacherDocSnap.data().mainTeacherUid);
+            } else {
+                if (isMounted) setTeacherUidToUse(teacher.uid);
+            }
+        };
+
+        determineTeacherUid();
+        
+        return () => { isMounted = false };
+    }, [teacher]);
+
 
     useEffect(() => {
-        if (!sectionId || !teacher) return;
+        if (!sectionId || !teacherUidToUse) return;
         
-        const sectionRef = doc(db, 'teachers', teacher.uid, 'duelQuestionSections', sectionId);
+        const sectionRef = doc(db, 'teachers', teacherUidToUse, 'duelQuestionSections', sectionId);
         const unsubSection = onSnapshot(sectionRef, (docSnap) => {
             if (docSnap.exists()) {
                 setSection({ id: docSnap.id, ...docSnap.data() } as DuelQuestionSection);
@@ -120,7 +141,7 @@ export default function EditDuelSectionPage() {
             }
         });
 
-        const questionsRef = collection(db, 'teachers', teacher.uid, 'duelQuestionSections', sectionId, 'questions');
+        const questionsRef = collection(db, 'teachers', teacherUidToUse, 'duelQuestionSections', sectionId, 'questions');
         const q = query(questionsRef);
         const unsubQuestions = onSnapshot(q, (snapshot) => {
             const fetchedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DuelQuestion));
@@ -134,7 +155,7 @@ export default function EditDuelSectionPage() {
             unsubQuestions();
         }
 
-    }, [sectionId, teacher, router, toast]);
+    }, [sectionId, teacherUidToUse, router, toast]);
     
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -264,7 +285,7 @@ export default function EditDuelSectionPage() {
     };
 
     const handleSaveChanges = async () => {
-        if (!teacher || !section) return;
+        if (!teacherUidToUse || !section) return;
 
         const invalidQuestion = questions.find(q => !q.text.trim() || q.answers.some(a => !a.trim()));
         if(invalidQuestion) {
@@ -274,7 +295,7 @@ export default function EditDuelSectionPage() {
 
         setIsSaving(true);
         try {
-            const sectionRef = doc(db, 'teachers', teacher.uid, 'duelQuestionSections', sectionId);
+            const sectionRef = doc(db, 'teachers', teacherUidToUse, 'duelQuestionSections', sectionId);
             const batch = writeBatch(db);
             
             // To handle deletion, fetch current questions in DB and delete those not in state.

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, PlusCircle, Edit, Trash2, Check, X, Loader2, Save, Star, Coins, ShieldAlert, RefreshCcw, BookOpen } from 'lucide-react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { collection, onSnapshot, query, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, getDoc } from 'firebase/firestore';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { DuelQuestionSection, DuelSettings } from '@/lib/duels';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +37,7 @@ export default function TrainingGroundsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [teacher, setTeacher] = useState<User | null>(null);
+  const [teacherUidToUse, setTeacherUidToUse] = useState<string | null>(null);
   const [sections, setSections] = useState<DuelQuestionSection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,10 +69,31 @@ export default function TrainingGroundsPage() {
     });
     return () => unsubscribe();
   }, [router]);
-
+  
   useEffect(() => {
     if (!teacher) return;
-    const sectionsRef = collection(db, 'teachers', teacher.uid, 'duelQuestionSections');
+    
+    let isMounted = true;
+    const determineTeacherUid = async () => {
+        const teacherDocRef = doc(db, 'teachers', teacher.uid);
+        const teacherDocSnap = await getDoc(teacherDocRef);
+        if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+            if (isMounted) setTeacherUidToUse(teacherDocSnap.data().mainTeacherUid);
+        } else {
+            if (isMounted) setTeacherUidToUse(teacher.uid);
+        }
+    };
+
+    determineTeacherUid();
+    
+    return () => { isMounted = false };
+  }, [teacher]);
+
+
+  useEffect(() => {
+    if (!teacherUidToUse) return;
+
+    const sectionsRef = collection(db, 'teachers', teacherUidToUse, 'duelQuestionSections');
     const q = query(sectionsRef);
     const unsubscribe = onSnapshot(q, (snapshot) => {
         setSections(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DuelQuestionSection)));
@@ -82,10 +104,10 @@ export default function TrainingGroundsPage() {
         setIsLoading(false);
     });
 
-    getDuelSettings(teacher.uid).then(setDuelSettings);
+    getDuelSettings(teacherUidToUse).then(setDuelSettings);
 
     return () => unsubscribe();
-  }, [teacher, toast]);
+  }, [teacherUidToUse, toast]);
 
   const sortedSections = useMemo(() => {
     return [...sections].sort((a, b) => a.name.localeCompare(b.name));
@@ -98,17 +120,17 @@ export default function TrainingGroundsPage() {
   }
 
   const handleSaveSection = async () => {
-    if (!teacher || !sectionName.trim()) {
+    if (!teacherUidToUse || !sectionName.trim()) {
         toast({ variant: 'destructive', title: 'Invalid Name', description: 'Section name cannot be empty.' });
         return;
     }
     setIsSaving(true);
     try {
         if (editingSection) {
-            await updateDuelSection({ teacherUid: teacher.uid, sectionId: editingSection.id, name: sectionName });
+            await updateDuelSection({ teacherUid: teacherUidToUse, sectionId: editingSection.id, name: sectionName });
             toast({ title: 'Section Updated' });
         } else {
-            await createDuelSection({ teacherUid: teacher.uid, name: sectionName });
+            await createDuelSection({ teacherUid: teacherUidToUse, name: sectionName });
             toast({ title: 'Section Created' });
         }
         setIsSectionDialogOpen(false);
@@ -120,10 +142,10 @@ export default function TrainingGroundsPage() {
   };
 
   const handleDelete = async () => {
-    if (!teacher || !sectionToDelete) return;
+    if (!teacherUidToUse || !sectionToDelete) return;
     setIsToggling(sectionToDelete.id); // Re-use toggling state for loading indicator
     try {
-        await deleteDuelSection({ teacherUid: teacher.uid, sectionId: sectionToDelete.id });
+        await deleteDuelSection({ teacherUid: teacherUidToUse, sectionId: sectionToDelete.id });
         toast({ title: 'Section Deleted', description: `"${sectionToDelete.name}" and all its questions have been removed.` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
@@ -134,10 +156,10 @@ export default function TrainingGroundsPage() {
   };
   
   const handleToggleActive = async (section: DuelQuestionSection) => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     setIsToggling(section.id);
     try {
-        await toggleDuelSectionActive({ teacherUid: teacher.uid, sectionId: section.id, isActive: !section.isActive });
+        await toggleDuelSectionActive({ teacherUid: teacherUidToUse, sectionId: section.id, isActive: !section.isActive });
     } catch(error: any) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
     } finally {
@@ -146,11 +168,11 @@ export default function TrainingGroundsPage() {
   }
 
   const handleToggleFeature = async (feature: 'isDuelsEnabled' | 'isDailyTrainingEnabled' | 'includeDuelsInDailyTraining') => {
-    if(!teacher) return;
+    if(!teacherUidToUse) return;
     const newStatus = !(duelSettings[feature] ?? true);
     setIsToggling(feature);
     try {
-        await updateDuelSettings({ teacherUid: teacher.uid, settings: { [feature]: newStatus } });
+        await updateDuelSettings({ teacherUid: teacherUidToUse, settings: { [feature]: newStatus } });
         setDuelSettings(prev => ({...prev, [feature]: newStatus}));
         let featureName = '';
         if (feature === 'isDuelsEnabled') featureName = 'Training Grounds';
@@ -166,12 +188,12 @@ export default function TrainingGroundsPage() {
   }
   
    const handleSaveSettings = async () => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     setIsSavingSettings(true);
     const { rewardXp, rewardGold, duelCost, dailyDuelLimit, isDailyLimitEnabled, numNormalQuestions, numSuddenDeathQuestions, dailyTrainingXpReward, dailyTrainingGoldReward } = duelSettings;
     try {
         const result = await updateDuelSettings({ 
-            teacherUid: teacher.uid, 
+            teacherUid: teacherUidToUse, 
             settings: { rewardXp, rewardGold, duelCost, dailyDuelLimit, isDailyLimitEnabled, numNormalQuestions, numSuddenDeathQuestions, dailyTrainingXpReward, dailyTrainingGoldReward } 
         });
         if (result.success) {
@@ -187,10 +209,10 @@ export default function TrainingGroundsPage() {
   };
 
   const handleResetStatuses = async () => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     setIsResetting(true);
     try {
-        const result = await resetAllDuelStatuses(teacher.uid);
+        const result = await resetAllDuelStatuses(teacherUidToUse);
         if (result.success) {
             toast({ title: 'Statuses Reset', description: result.message });
         } else {
@@ -204,10 +226,10 @@ export default function TrainingGroundsPage() {
   }
   
   const handleResetTrainings = async () => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     setIsResettingTraining(true);
     try {
-        const result = await resetAllDailyTrainings(teacher.uid);
+        const result = await resetAllDailyTrainings(teacherUidToUse);
         if (result.success) {
             toast({ title: 'Daily Trainings Reset', description: result.message });
         } else {
