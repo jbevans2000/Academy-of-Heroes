@@ -11,7 +11,7 @@ import type { Student } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, BookMarked, Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookMarked, Loader2, PlusCircle, Trash2, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
