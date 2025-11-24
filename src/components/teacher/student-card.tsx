@@ -469,12 +469,12 @@ interface StudentCardProps {
   onSendMessage: (student: Student) => void;
   hubs: QuestHub[];
   chapters: Chapter[];
+  companies: Company[];
   isOnline: boolean;
 }
 
-export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendMessage, hubs, chapters, isOnline }: StudentCardProps) {
+export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendMessage, hubs, chapters, companies, isOnline }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
-  const [company, setCompany] = useState<Company | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
   const [isMeditationDialogOpen, setIsMeditationDialogOpen] = useState(false);
@@ -487,25 +487,8 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    let unsubscribe: () => void;
-    if (student.companyId) {
-        const companyRef = doc(db, 'teachers', teacherUid, 'companies', student.companyId);
-        unsubscribe = onSnapshot(companyRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setCompany({ id: docSnap.id, ...docSnap.data()} as Company);
-            } else {
-                setCompany(null);
-            }
-        });
-    } else {
-        setCompany(null);
-    }
-    return () => {
-        if(unsubscribe) unsubscribe();
-    };
-  }, [student.companyId, teacherUid]);
-  
+  const company = companies.find(c => c.id === student.companyId);
+
   const handleToggleVisibility = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the card from being selected
     try {

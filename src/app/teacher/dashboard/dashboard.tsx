@@ -1269,6 +1269,7 @@ export default function Dashboard() {
                                             onSendMessage={handleOpenMessageCenter}
                                             hubs={hubs}
                                             chapters={chapters}
+                                            companies={companies}
                                             onlineUids={onlineUids || []}
                                         />
                                     </div>
@@ -1285,6 +1286,7 @@ export default function Dashboard() {
                                         onSendMessage={handleOpenMessageCenter}
                                         hubs={hubs}
                                         chapters={chapters}
+                                        companies={companies}
                                         onlineUids={onlineUids || []}
                                     />
                                 </div>
@@ -1299,6 +1301,7 @@ export default function Dashboard() {
                             onSendMessage={handleOpenMessageCenter}
                             hubs={hubs}
                             chapters={chapters}
+                            companies={companies}
                             onlineUids={onlineUids}
                         />
                     ) : null}
