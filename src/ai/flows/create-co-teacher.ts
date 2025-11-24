@@ -3,12 +3,13 @@
 /**
  * @fileOverview A secure, server-side flow for creating a co-teacher account.
  */
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAdminAuth } from '@/lib/firebaseAdmin';
 
 interface CreateCoTeacherInput {
-  invitationId: string;
+  mainTeacherUid: string;
+  mainTeacherName: string;
   inviteeName: string;
   inviteeEmail: string;
   password: string;
@@ -21,48 +22,46 @@ interface ActionResponse {
 }
 
 export async function createCoTeacherAccount(input: CreateCoTeacherInput): Promise<ActionResponse> {
-  const { invitationId, inviteeName, inviteeEmail, password } = input;
+  const { mainTeacherUid, mainTeacherName, inviteeName, inviteeEmail, password } = input;
 
-  if (!invitationId || !inviteeName || !inviteeEmail || !password) {
+  if (!mainTeacherUid || !mainTeacherName || !inviteeName || !inviteeEmail || !password) {
     return { success: false, error: 'Missing required information.' };
   }
   if (password.length < 6) {
     return { success: false, error: 'Password must be at least 6 characters long.' };
   }
 
-  const invitationRef = doc(db, 'coTeacherInvitations', invitationId);
-
   try {
     const adminAuth = getAdminAuth();
 
-    // 1. Check if the invitation still exists
-    const invitationSnap = await getDoc(invitationRef);
-    if (!invitationSnap.exists()) {
-      throw new Error('This invitation is no longer valid.');
-    }
-    const invitationData = invitationSnap.data();
-
-    // 2. Create the user in Firebase Authentication
+    // 1. Create the user in Firebase Authentication
     const userRecord = await adminAuth.createUser({
       email: inviteeEmail,
       emailVerified: true, // Co-teachers are invited, so we can consider them verified.
       password: password,
       displayName: inviteeName,
     });
+    
+    // Get main teacher's data to copy relevant fields
+    const mainTeacherRef = doc(db, 'teachers', mainTeacherUid);
+    const mainTeacherSnap = await getDoc(mainTeacherRef);
+    const mainTeacherData = mainTeacherSnap.exists() ? mainTeacherSnap.data() : {};
 
-    // 3. Create the co-teacher document in Firestore
+    // 2. Create the co-teacher document in Firestore
     const teacherRef = doc(db, 'teachers', userRecord.uid);
     await setDoc(teacherRef, {
         uid: userRecord.uid,
         name: inviteeName,
         email: inviteeEmail,
+        // Set co-teacher specific fields
         accountType: 'co-teacher',
-        mainTeacherUid: invitationData.mainTeacherUid,
+        mainTeacherUid: mainTeacherUid,
+        // Copy relevant fields from the main teacher
+        schoolName: mainTeacherData.schoolName || '',
+        className: mainTeacherData.className || '',
+        levelingTable: mainTeacherData.levelingTable || {},
         createdAt: serverTimestamp(),
     });
-    
-    // 4. Delete the invitation so it can't be used again
-    await deleteDoc(invitationRef);
     
     return { success: true, message: 'Your co-teacher account has been successfully created!' };
 
