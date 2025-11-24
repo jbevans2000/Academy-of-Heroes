@@ -110,6 +110,7 @@ export default function Dashboard() {
   const [hpMpDialogMode, setHpMpDialogMode] = useState<'restore' | 'remove'>('restore');
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
+  const [teacherUidToUse, setTeacherUidToUse] = useState<string | null>(null);
   const [isCoTeacher, setIsCoTeacher] = useState(false);
   const [onlineUids, setOnlineUids] = useState<string[]>([]);
   const [isAdminPreview, setIsAdminPreview] = useState(false);
@@ -214,8 +215,9 @@ export default function Dashboard() {
             }
         }
         
+        setTeacherUidToUse(teacherIdToFetch);
+
         if (teacherIdToFetch) {
-            // This part runs once we know which teacher's data to fetch.
             const checkWelcomeAndBroadcast = async () => {
                 const teacherRef = doc(db, 'teachers', teacherIdToFetch!);
                 const teacherSnap = await getDoc(teacherRef);
@@ -259,23 +261,11 @@ export default function Dashboard() {
   }, [searchParams, router]);
 
   useEffect(() => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     
     let unsubscribers: any[] = [];
     
     const setupListeners = async () => {
-        let teacherUidToUse = teacher.uid;
-
-        const teacherDocRef = doc(db, 'teachers', teacher.uid);
-        const teacherDocSnap = await getDoc(teacherDocRef);
-        if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
-            teacherUidToUse = teacherDocSnap.data().mainTeacherUid;
-        }
-        
-        if (!teacherUidToUse) {
-            setIsLoading(false);
-            return;
-        }
       
         const teacherRef = doc(db, 'teachers', teacherUidToUse);
         unsubscribers.push(onSnapshot(teacherRef, (teacherSnap) => {
@@ -329,7 +319,7 @@ export default function Dashboard() {
     return () => {
       unsubscribers.forEach(unsub => unsub && unsub());
     };
-  }, [teacher]);
+  }, [teacherUidToUse]);
 
 
   const sortedStudents = useMemo(() => {
@@ -454,6 +444,7 @@ export default function Dashboard() {
 
 
   const handleAwardRewards = async () => {
+      if (!teacherUidToUse) return;
       const xpValue = Number(xpAmount) || 0;
       const goldValue = Number(goldAmount) || 0;
 
@@ -470,7 +461,7 @@ export default function Dashboard() {
       
       try {
           const result = await updateStudentStats({
-              teacherUid: teacher!.uid,
+              teacherUid: teacherUidToUse,
               studentUids: selectedStudents,
               xp: xpValue,
               gold: goldValue,
@@ -514,10 +505,10 @@ export default function Dashboard() {
   }
 
   const handleApproval = async (pendingStudent: PendingStudent, isApproved: boolean) => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     const { uid } = pendingStudent;
   
-    const pendingStudentRef = doc(db, 'teachers', teacher.uid, 'pendingStudents', uid);
+    const pendingStudentRef = doc(db, 'teachers', teacherUidToUse, 'pendingStudents', uid);
   
     if (isApproved) {
       const { status, requestedAt, ...newStudentData } = pendingStudent;
@@ -534,7 +525,7 @@ export default function Dashboard() {
         inDuel: false,
       };
       
-      const newStudentRef = doc(db, 'teachers', teacher.uid, 'students', uid);
+      const newStudentRef = doc(db, 'teachers', teacherUidToUse, 'students', uid);
       
       const batch = writeBatch(db);
       batch.set(newStudentRef, newStudent);
@@ -544,13 +535,13 @@ export default function Dashboard() {
       
       await updateDoc(doc(db, 'students', uid), { approved: true });
       
-      await logGameEvent(teacher.uid, 'ACCOUNT', `${newStudent.studentName} (${newStudent.characterName}) was approved and joined the guild.`);
+      await logGameEvent(teacherUidToUse, 'ACCOUNT', `${newStudent.studentName} (${newStudent.characterName}) was approved and joined the guild.`);
       toast({ title: "Hero Approved!", description: `${newStudent.characterName} has joined your guild.` });
     } else {
       await deleteDoc(pendingStudentRef);
       await deleteDoc(doc(db, 'students', uid));
 
-      await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
+      await logGameEvent(teacherUidToUse, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
       toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted. You may need to delete the user from Firebase Authentication manually if they should be prevented from re-registering.` });
     }
   
@@ -560,7 +551,7 @@ export default function Dashboard() {
   };
 
   const handleClearAllBattleStatus = async (isAutoCleanup = false) => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     
     if (!isAutoCleanup) {
         setIsAwarding(true);
@@ -568,7 +559,7 @@ export default function Dashboard() {
 
     const batch = writeBatch(db);
     try {
-        const studentsInBattleQuery = query(collection(db, 'teachers', teacher.uid, 'students'), where('inBattle', '==', true));
+        const studentsInBattleQuery = query(collection(db, 'teachers', teacherUidToUse, 'students'), where('inBattle', '==', true));
         const studentsInBattleSnapshot = await getDocs(studentsInBattleQuery);
         let studentCount = 0;
         if (!studentsInBattleSnapshot.empty) {
@@ -578,7 +569,7 @@ export default function Dashboard() {
             });
         }
 
-        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', teacherUidToUse, 'liveBattles', 'active-battle');
         const subcollectionsToDelete = ['responses', 'powerActivations', 'battleLog', 'messages'];
         
         for (const subcollection of subcollectionsToDelete) {
@@ -590,7 +581,7 @@ export default function Dashboard() {
         }
         batch.delete(liveBattleRef);
 
-        const teacherRef = doc(db, 'teachers', teacher.uid);
+        const teacherRef = doc(db, 'teachers', teacherUidToUse);
         batch.update(teacherRef, { pendingCleanupBattleId: null });
 
         await batch.commit();
@@ -625,12 +616,12 @@ export default function Dashboard() {
     };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
-      if (!teacher) return;
+      if (!teacherUidToUse) return;
       setIsAwarding(true);
       try {
           const result = stat === 'hp'
-              ? await restoreAllStudentsHp(teacher.uid)
-              : await restoreAllStudentsMp(teacher.uid);
+              ? await restoreAllStudentsHp(teacherUidToUse)
+              : await restoreAllStudentsMp(teacherUidToUse);
           
           if (result.success) {
               toast({ title: 'Success!', description: result.message });
@@ -645,11 +636,11 @@ export default function Dashboard() {
   }
 
   const handleSaveReminder = async () => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     setIsSavingReminder(true);
     try {
         await updateDailyReminder({
-            teacherUid: teacher.uid,
+            teacherUid: teacherUidToUse,
             title: reminderTitle,
             message: reminderMessage,
             isActive: isReminderActive,
@@ -664,7 +655,7 @@ export default function Dashboard() {
   }
 
   const handleSaveRegen = async () => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     const percentage = Number(regenPercentage);
     if (isNaN(percentage) || percentage < 0 || percentage > 100) {
         toast({ variant: 'destructive', title: 'Invalid Value', description: 'Please enter a number between 0 and 100.' });
@@ -672,7 +663,7 @@ export default function Dashboard() {
     }
     setIsSavingRegen(true);
     try {
-        await updateDailyRegen({ teacherUid: teacher.uid, regenPercentage: percentage });
+        await updateDailyRegen({ teacherUid: teacherUidToUse, regenPercentage: percentage });
         toast({ title: 'Success', description: 'Daily regeneration rate updated.' });
         setIsRegenDialogOpen(false);
     } catch (error: any) {
@@ -683,14 +674,14 @@ export default function Dashboard() {
   }
   
     const handleBulkMeditation = async () => {
-        if (!teacher || selectedStudents.length === 0 || !bulkMeditationMessage.trim()) {
+        if (!teacherUidToUse || selectedStudents.length === 0 || !bulkMeditationMessage.trim()) {
             toast({ variant: 'destructive', title: 'Missing Info', description: 'Please select students and enter a message.' });
             return;
         }
         setIsAwarding(true); // Re-use awarding state for loading
         try {
             const result = await setBulkMeditationStatus({
-                teacherUid: teacher.uid,
+                teacherUid: teacherUidToUse,
                 studentUids: selectedStudents,
                 isInMeditation: true,
                 message: bulkMeditationMessage,
@@ -713,10 +704,10 @@ export default function Dashboard() {
     };
 
     const handleReleaseAll = async () => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         setIsReleasingAll(true);
         try {
-            const result = await releaseAllFromMeditation({ teacherUid: teacher.uid });
+            const result = await releaseAllFromMeditation({ teacherUid: teacherUidToUse });
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
             } else {
@@ -1106,7 +1097,7 @@ export default function Dashboard() {
                             onOpenChange={setIsHpMpDialogOpen}
                             mode={hpMpDialogMode}
                             selectedStudents={selectedStudents}
-                            teacherUid={teacher.uid}
+                            teacherUid={teacherUidToUse!}
                             onSuccess={() => setSelectedStudents([])}
                         />
 
@@ -1247,7 +1238,7 @@ export default function Dashboard() {
                         isOpen={isBulkQuestProgressOpen}
                         onOpenChange={setIsBulkQuestProgressOpen}
                         studentsToUpdate={students.filter(s => selectedStudents.includes(s.uid))}
-                        teacherUid={teacher.uid}
+                        teacherUid={teacherUidToUse!}
                         hubs={hubs}
                         chapters={chapters}
                     />
@@ -1265,7 +1256,7 @@ export default function Dashboard() {
                                             students={members}
                                             selectedStudents={selectedStudents}
                                             onSelectStudent={handleToggleStudentSelection}
-                                            teacherUid={teacher.uid}
+                                            teacherUid={teacherUidToUse!}
                                             onSendMessage={handleOpenMessageCenter}
                                             hubs={hubs}
                                             chapters={chapters}
@@ -1282,7 +1273,7 @@ export default function Dashboard() {
                                         students={sortedStudents.freelancers}
                                         selectedStudents={selectedStudents}
                                         onSelectStudent={handleToggleStudentSelection}
-                                        teacherUid={teacher.uid}
+                                        teacherUid={teacherUidToUse!}
                                         onSendMessage={handleOpenMessageCenter}
                                         hubs={hubs}
                                         chapters={chapters}
@@ -1297,7 +1288,7 @@ export default function Dashboard() {
                             students={sortedStudents.data} 
                             selectedStudents={selectedStudents}
                             onSelectStudent={handleToggleStudentSelection}
-                            teacherUid={teacher.uid}
+                            teacherUid={teacherUidToUse!}
                             onSendMessage={handleOpenMessageCenter}
                             hubs={hubs}
                             chapters={chapters}
