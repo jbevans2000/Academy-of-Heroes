@@ -263,77 +263,85 @@ export default function Dashboard() {
     if (!teacher?.uid) return;
     
     const getTeacherId = async () => {
-      const teacherDoc = await getDoc(doc(db, 'teachers', teacher.uid));
-      if (teacherDoc.exists() && teacherDoc.data().accountType === 'co-teacher') {
-        return teacherDoc.data().mainTeacherUid;
-      }
-      return teacher.uid;
+        // This check is now crucial. We need the document of the LOGGED-IN user.
+        const loggedInTeacherDoc = await getDoc(doc(db, 'teachers', teacher.uid));
+        if (loggedInTeacherDoc.exists() && loggedInTeacherDoc.data().accountType === 'co-teacher') {
+            return loggedInTeacherDoc.data().mainTeacherUid;
+        }
+        // Admin preview or main teacher
+        return teacher.uid;
     }
 
-    let teacherUid: string;
+    let unsubscribers: any[] = [];
     
     const setupListeners = async () => {
-      teacherUid = await getTeacherId();
+        const teacherUidToUse = await getTeacherId();
+        if (!teacherUidToUse) {
+            setIsLoading(false);
+            return;
+        }
       
-      const teacherRef = doc(db, 'teachers', teacherUid);
-      const unsubTeacher = onSnapshot(teacherRef, (teacherSnap) => {
-          if (teacherSnap.exists()) {
-              const data = teacherSnap.data() as TeacherData;
-              setTeacherData(data);
-              setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
-              setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
-              setIsReminderActive(data.isDailyReminderActive ?? true);
-              setRegenPercentage(data.dailyRegenPercentage ?? 0);
-              if (data.pendingCleanupBattleId) {
-                  setTimeout(() => {
-                      handleClearAllBattleStatus(true);
-                  }, 20000);
-              }
-          }
-      });
+        const teacherRef = doc(db, 'teachers', teacherUidToUse);
+        const unsubTeacher = onSnapshot(teacherRef, (teacherSnap) => {
+            if (teacherSnap.exists()) {
+                const data = teacherSnap.data() as TeacherData;
+                setTeacherData(data);
+                setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
+                setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
+                setIsReminderActive(data.isDailyReminderActive ?? true);
+                setRegenPercentage(data.dailyRegenPercentage ?? 0);
+                if (data.pendingCleanupBattleId) {
+                    setTimeout(() => {
+                        handleClearAllBattleStatus(true);
+                    }, 20000);
+                }
+            }
+        });
+        unsubscribers.push(unsubTeacher);
 
-      const studentsQuery = collection(db, "teachers", teacherUid, "students");
-      const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-          const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-          setStudents(studentData);
-          setIsLoading(false);
-      });
-      
-      const pendingStudentsQuery = collection(db, "teachers", teacherUid, "pendingStudents");
-      const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
-          setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
-      });
-      
-      const companiesQuery = collection(db, 'teachers', teacherUid, 'companies');
-      const companiesUnsubscribe = onSnapshot(companiesQuery, (snapshot) => {
-          const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-          setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
-      });
+        const studentsQuery = collection(db, "teachers", teacherUidToUse, "students");
+        const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
+            const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+            setStudents(studentData);
+            setIsLoading(false);
+        });
+        unsubscribers.push(unsubStudents);
+        
+        const pendingStudentsQuery = collection(db, "teachers", teacherUidToUse, "pendingStudents");
+        const unsubPending = onSnapshot(pendingStudentsQuery, (snapshot) => {
+            setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
+        });
+        unsubscribers.push(unsubPending);
+        
+        const companiesQuery = collection(db, 'teachers', teacherUidToUse, 'companies');
+        const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
+            const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+            setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
+        });
+        unsubscribers.push(unsubCompanies);
 
-      const presenceRef = doc(db, 'teachers', teacherUid, 'presence', 'online');
-      const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
-          const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
-          const uids = Object.keys(presenceData).filter(uid => presenceData[uid]?.status === 'online');
-          setOnlineUids(uids);
-      });
-      
-      const hubsQuery = query(collection(db, 'teachers', teacherUid, 'questHubs'), orderBy('hubOrder'));
-      const hubsUnsubscribe = onSnapshot(hubsQuery, (snapshot) => {
-          setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)))
-      });
-      
-      const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'));
-      const chaptersUnsubscribe = onSnapshot(chaptersQuery, (snapshot) => {
-          setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
-      });
-
-      return [unsubTeacher, studentsUnsubscribe, pendingUnsubscribe, companiesUnsubscribe, hubsUnsubscribe, chaptersUnsubscribe, unsubPresence];
+        const presenceRef = doc(db, 'teachers', teacherUidToUse, 'presence', 'online');
+        const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
+            const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
+            const uids = Object.keys(presenceData).filter(uid => presenceData[uid]?.status === 'online');
+            setOnlineUids(uids);
+        });
+        unsubscribers.push(unsubPresence);
+        
+        const hubsQuery = query(collection(db, 'teachers', teacherUidToUse, 'questHubs'), orderBy('hubOrder'));
+        const unsubHubs = onSnapshot(hubsQuery, (snapshot) => {
+            setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)))
+        });
+        unsubscribers.push(unsubHubs);
+        
+        const chaptersQuery = query(collection(db, 'teachers', teacherUidToUse, 'chapters'));
+        const unsubChapters = onSnapshot(chaptersQuery, (snapshot) => {
+            setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
+        });
+        unsubscribers.push(unsubChapters);
     }
     
-    let unsubscribers: any[] = [];
-    setupListeners().then(unsubs => {
-      unsubscribers = unsubs;
-    });
+    setupListeners();
 
     return () => {
       unsubscribers.forEach(unsub => unsub && unsub());
@@ -1318,3 +1326,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
