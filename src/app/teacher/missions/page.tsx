@@ -4,15 +4,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Mission } from '@/lib/missions';
+import type { Student } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, BookOpen, PlusCircle, Trash2, Loader2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -27,7 +29,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteMission } from '@/ai/flows/manage-missions';
-import { useToast } from '@/hooks/use-toast';
 
 interface Submission {
     id: string;
@@ -42,6 +43,7 @@ export default function StudentMissionsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [missions, setMissions] = useState<Mission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -56,12 +58,33 @@ export default function StudentMissionsPage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+     useEffect(() => {
+        if (!user) return;
+        
+        let isMounted = true;
+        const determineTeacherUid = async () => {
+            const teacherDocRef = doc(db, 'teachers', user.uid);
+            const teacherDocSnap = await getDoc(teacherDocRef);
+            if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                if (isMounted) setTeacherUid(teacherDocSnap.data().mainTeacherUid);
+            } else {
+                if (isMounted) setTeacherUid(user.uid);
+            }
+        };
+
+        determineTeacherUid();
+        
+        return () => { isMounted = false };
+    }, [user]);
 
     useEffect(() => {
-        if (!user) return;
+        if (!teacherUid) return;
+
         setIsLoading(true);
-        const missionsRef = collection(db, 'teachers', user.uid, 'missions');
+        const missionsRef = collection(db, 'teachers', teacherUid, 'missions');
         const q = query(missionsRef, orderBy('createdAt', 'desc'));
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setMissions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mission)));
             setIsLoading(false);
@@ -73,13 +96,13 @@ export default function StudentMissionsPage() {
 
         return () => unsubscribe();
 
-    }, [user, toast]);
+    }, [teacherUid, toast]);
     
     const handleDeleteMission = async (missionId: string) => {
-        if (!user) return;
+        if (!teacherUid) return;
         setIsDeleting(missionId);
         try {
-            const result = await deleteMission(user.uid, missionId);
+            const result = await deleteMission(teacherUid, missionId);
             if (result.success) {
                 toast({ title: 'Mission Deleted', description: 'The mission has been permanently removed.' });
             } else {

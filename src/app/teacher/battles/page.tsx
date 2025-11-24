@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, query, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,7 @@ export default function BossBattlesPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [teacher, setTeacher] = useState<FirebaseUser | null>(null);
+  const [teacherUid, setTeacherUid] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -74,9 +75,30 @@ export default function BossBattlesPage() {
 
   useEffect(() => {
     if (!teacher) return;
+    
+    let isMounted = true;
+    const determineTeacherUid = async () => {
+        const teacherDocRef = doc(db, 'teachers', teacher.uid);
+        const teacherDocSnap = await getDoc(teacherDocRef);
+        if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+            if (isMounted) setTeacherUid(teacherDocSnap.data().mainTeacherUid);
+        } else {
+            if (isMounted) setTeacherUid(teacher.uid);
+        }
+    };
+
+    determineTeacherUid();
+    
+    return () => { isMounted = false };
+
+  }, [teacher]);
+
+
+  useEffect(() => {
+    if (!teacherUid) return;
     setIsLoading(true);
 
-    const battlesRef = collection(db, 'teachers', teacher.uid, 'bossBattles');
+    const battlesRef = collection(db, 'teachers', teacherUid, 'bossBattles');
     const unsubBattles = onSnapshot(battlesRef, (querySnapshot) => {
         const battlesData = querySnapshot.docs.map(doc => ({
             id: doc.id,
@@ -90,7 +112,7 @@ export default function BossBattlesPage() {
         setIsLoading(false);
     });
     
-    const companiesRef = collection(db, 'teachers', teacher.uid, 'companies');
+    const companiesRef = collection(db, 'teachers', teacherUid, 'companies');
     const unsubCompanies = onSnapshot(companiesRef, (querySnapshot) => {
       setAllCompanies(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
     });
@@ -100,15 +122,15 @@ export default function BossBattlesPage() {
         unsubCompanies();
     }
 
-  }, [teacher, toast]);
+  }, [teacherUid, toast]);
 
   const handleStartIndividualBattle = async (battle: BossBattle) => {
-    if (!teacher) return;
+    if (!teacherUid) return;
     setStartingBattleId(battle.id);
     try {
         const batch = writeBatch(db);
         
-        const archiveRef = doc(collection(db, 'teachers', teacher.uid, 'savedBattles'));
+        const archiveRef = doc(collection(db, 'teachers', teacherUid, 'savedBattles'));
         
         batch.set(archiveRef, {
             battleId: battle.id,
@@ -117,7 +139,7 @@ export default function BossBattlesPage() {
             startedAt: serverTimestamp(),
         });
 
-        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         batch.set(liveBattleRef, {
             battleId: battle.id,
             parentArchiveId: archiveRef.id,
@@ -143,7 +165,7 @@ export default function BossBattlesPage() {
         
         await batch.commit();
 
-        await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Individual Boss Battle '${battle.battleName}' has been activated.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Individual Boss Battle '${battle.battleName}' has been activated.`);
 
         toast({
             title: 'Individual Battle Started!',
@@ -205,11 +227,11 @@ export default function BossBattlesPage() {
   }
 
   const handleDeleteBattle = async (battleId: string) => {
-    if (!teacher) return;
+    if (!teacherUid) return;
     try {
         const battleToDelete = battles.find(b => b.id === battleId);
-        await deleteDoc(doc(db, 'teachers', teacher.uid, 'bossBattles', battleId));
-        await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted Boss Battle: '${battleToDelete?.battleName || battleId}'.`);
+        await deleteDoc(doc(db, 'teachers', teacherUid, 'bossBattles', battleId));
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Boss Battle: '${battleToDelete?.battleName || battleId}'.`);
 
         toast({
             title: 'Battle Deleted',

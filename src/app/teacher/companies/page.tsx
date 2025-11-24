@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
 import type { Student, Company } from '@/lib/data';
@@ -147,6 +147,7 @@ export default function CompaniesPage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -173,16 +174,36 @@ export default function CompaniesPage() {
         });
         return () => unsubscribe();
     }, [router]);
-
-    useEffect(() => {
+    
+     useEffect(() => {
         if (!teacher) return;
         
-        const unsubStudents = onSnapshot(collection(db, 'teachers', teacher.uid, 'students'), (snapshot) => {
+        let isMounted = true;
+        const determineTeacherUid = async () => {
+            const teacherDocRef = doc(db, 'teachers', teacher.uid);
+            const teacherDocSnap = await getDoc(teacherDocRef);
+            if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                if (isMounted) setTeacherUid(teacherDocSnap.data().mainTeacherUid);
+            } else {
+                if (isMounted) setTeacherUid(teacher.uid);
+            }
+        };
+
+        determineTeacherUid();
+        
+        return () => { isMounted = false };
+    }, [teacher]);
+
+
+    useEffect(() => {
+        if (!teacherUid) return;
+        
+        const unsubStudents = onSnapshot(collection(db, 'teachers', teacherUid, 'students'), (snapshot) => {
             setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
             setIsLoading(false);
         });
 
-        const unsubCompanies = onSnapshot(collection(db, 'teachers', teacher.uid, 'companies'), (snapshot) => {
+        const unsubCompanies = onSnapshot(collection(db, 'teachers', teacherUid, 'companies'), (snapshot) => {
             setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
         });
 
@@ -190,7 +211,7 @@ export default function CompaniesPage() {
             unsubStudents();
             unsubCompanies();
         };
-    }, [teacher]);
+    }, [teacherUid]);
 
     const openNewCompanyDialog = () => {
         setEditingCompany(null);
@@ -211,27 +232,27 @@ export default function CompaniesPage() {
     };
 
     const handleStudentDrop = async (studentId: string, companyId: string) => {
-        if (!teacher) return;
-        const studentRef = doc(db, 'teachers', teacher.uid, 'students', studentId);
+        if (!teacherUid) return;
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentId);
         await updateDoc(studentRef, { companyId: companyId });
     };
 
     const handleRemoveStudentFromCompany = async (studentId: string) => {
-         if (!teacher) return;
-        const studentRef = doc(db, 'teachers', teacher.uid, 'students', studentId);
+         if (!teacherUid) return;
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentId);
         await updateDoc(studentRef, { companyId: '' }); // Or delete the field
     }
 
     const handleDeleteCompany = async () => {
-        if (!teacher || !companyToDelete) return;
+        if (!teacherUid || !companyToDelete) return;
         setIsSaving(true);
         try {
-            const companyRef = doc(db, 'teachers', teacher.uid, 'companies', companyToDelete);
+            const companyRef = doc(db, 'teachers', teacherUid, 'companies', companyToDelete);
             
             const studentsToUpdate = students.filter(s => s.companyId === companyToDelete);
             const batch = writeBatch(db);
             studentsToUpdate.forEach(student => {
-                const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                 batch.update(studentRef, { companyId: '' });
             });
             
@@ -249,7 +270,7 @@ export default function CompaniesPage() {
     };
     
     const handleSaveCompany = async () => {
-        if (!teacher || !companyName.trim()) {
+        if (!teacherUid || !companyName.trim()) {
             toast({ variant: 'destructive', title: 'Error', description: 'Company name cannot be empty.' });
             return;
         }
@@ -258,12 +279,12 @@ export default function CompaniesPage() {
         try {
             let logoUrl = editingCompany?.logoUrl || '';
             if (companyLogo) {
-                logoUrl = await uploadFile(companyLogo, `company-logos/${teacher.uid}/${Date.now()}_${companyLogo.name}`);
+                logoUrl = await uploadFile(companyLogo, `company-logos/${teacherUid}/${Date.now()}_${companyLogo.name}`);
             }
 
             let backgroundUrl = editingCompany?.backgroundUrl || '';
              if (companyBackground) {
-                backgroundUrl = await uploadFile(companyBackground, `company-backgrounds/${teacher.uid}/${Date.now()}_${companyBackground.name}`);
+                backgroundUrl = await uploadFile(companyBackground, `company-backgrounds/${teacherUid}/${Date.now()}_${companyBackground.name}`);
             }
 
             await saveCompanyData(logoUrl, backgroundUrl, companyColor);
@@ -292,15 +313,15 @@ export default function CompaniesPage() {
     }
     
     const saveCompanyData = async (logoUrl: string, backgroundUrl: string, color: string) => {
-        if (!teacher) return;
+        if (!teacherUid) return;
         try {
             const companyData = { name: companyName, logoUrl, backgroundUrl, color };
             if (editingCompany) {
-                const companyRef = doc(db, 'teachers', teacher.uid, 'companies', editingCompany.id);
+                const companyRef = doc(db, 'teachers', teacherUid, 'companies', editingCompany.id);
                 await updateDoc(companyRef, companyData);
                 toast({ title: 'Company Updated', description: 'The company details have been saved.' });
             } else {
-                await addDoc(collection(db, 'teachers', teacher.uid, 'companies'), {
+                await addDoc(collection(db, 'teachers', teacherUid, 'companies'), {
                     ...companyData,
                     createdAt: serverTimestamp(),
                 });
@@ -318,13 +339,13 @@ export default function CompaniesPage() {
     }
 
     const handleClearCompanies = async () => {
-        if (!teacher) return;
+        if (!teacherUid) return;
         setIsClearing(true);
         try {
             const batch = writeBatch(db);
             students.forEach(student => {
                 if (student.companyId) {
-                    const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                    const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                     batch.update(studentRef, { companyId: '' });
                 }
             });
@@ -338,7 +359,7 @@ export default function CompaniesPage() {
     };
 
     const handleDistributeByClass = async () => {
-        if (!teacher || companies.length === 0) {
+        if (!teacherUid || companies.length === 0) {
             toast({ variant: 'destructive', title: 'No Companies', description: 'You must create companies before distributing students.' });
             return;
         }
@@ -353,7 +374,7 @@ export default function CompaniesPage() {
             let companyIndex = 0;
             const assign = (student: Student) => {
                 const companyId = companies[companyIndex % companies.length].id;
-                const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                 batch.update(studentRef, { companyId });
                 companyIndex++;
             };
