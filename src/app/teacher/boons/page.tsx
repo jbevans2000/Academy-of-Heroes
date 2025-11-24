@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Boon, PendingBoonRequest, BoonTransaction } from '@/lib/boons';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -49,6 +48,7 @@ export default function BoonsPage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [teacherUidToUse, setTeacherUidToUse] = useState<string | null>(null);
     const [boons, setBoons] = useState<Boon[]>([]);
     const [pendingRequests, setPendingRequests] = useState<PendingBoonRequest[]>([]);
     const [transactions, setTransactions] = useState<BoonTransaction[]>([]);
@@ -71,9 +71,16 @@ export default function BoonsPage() {
 
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, user => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 setTeacher(user);
+                const teacherDocRef = doc(db, 'teachers', user.uid);
+                const teacherDocSnap = await getDoc(teacherDocRef);
+                if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                    setTeacherUidToUse(teacherDocSnap.data().mainTeacherUid);
+                } else {
+                    setTeacherUidToUse(user.uid);
+                }
             } else {
                 router.push('/teacher/login');
             }
@@ -90,11 +97,11 @@ export default function BoonsPage() {
 
 
     useEffect(() => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         
-        const boonsQuery = query(collection(db, 'teachers', teacher.uid, 'boons'));
-        const pendingQuery = query(collection(db, 'teachers', teacher.uid, 'pendingBoonRequests'), orderBy('requestedAt', 'desc'));
-        const transactionsQuery = query(collection(db, 'teachers', teacher.uid, 'boonTransactions'), orderBy('timestamp', 'desc'), limit(15));
+        const boonsQuery = query(collection(db, 'teachers', teacherUidToUse, 'boons'));
+        const pendingQuery = query(collection(db, 'teachers', teacherUidToUse, 'pendingBoonRequests'), orderBy('requestedAt', 'desc'));
+        const transactionsQuery = query(collection(db, 'teachers', teacherUidToUse, 'boonTransactions'), orderBy('timestamp', 'desc'), limit(15));
         
         const unsubBoons = onSnapshot(boonsQuery, (snapshot) => {
             setBoons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
@@ -118,7 +125,7 @@ export default function BoonsPage() {
             unsubPending();
             unsubTransactions();
         };
-    }, [teacher, toast]);
+    }, [teacherUidToUse, toast]);
     
     const sortedBoons = useMemo(() => {
         return [...boons].sort((a, b) => {
@@ -142,10 +149,10 @@ export default function BoonsPage() {
     }, [boons, sortOrder]);
 
     const handlePopulateBoons = async () => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         setIsPopulating(true);
         try {
-            const result = await populateDefaultBoons(teacher.uid);
+            const result = await populateDefaultBoons(teacherUidToUse);
             if (!result.success) {
                 throw new Error(result.error || 'An unknown error occurred.');
             }
@@ -159,10 +166,10 @@ export default function BoonsPage() {
     }
 
     const handleDelete = async (boonId: string) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         setIsDeleting(boonId);
         try {
-            const result = await deleteBoon(teacher.uid, boonId);
+            const result = await deleteBoon(teacherUidToUse, boonId);
             if (result.success) {
                 toast({ title: "Reward Deleted", description: "The Reward has been removed from your store." });
             } else {
@@ -177,11 +184,11 @@ export default function BoonsPage() {
     };
     
     const handleVisibilityToggle = async (boon: Boon) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         const newVisibility = !(boon.isVisibleToStudents ?? false);
         setIsToggling(boon.id);
         try {
-            const result = await updateBoonVisibility(teacher.uid, boon.id, newVisibility);
+            const result = await updateBoonVisibility(teacherUidToUse, boon.id, newVisibility);
             if (!result.success) {
                 throw new Error(result.error);
             }
@@ -194,12 +201,12 @@ export default function BoonsPage() {
     }
 
     const handleApproval = async (requestId: string, approve: boolean) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         setIsProcessingRequest(requestId);
         try {
             const result = approve 
-                ? await approveBoonRequest({ teacherUid: teacher.uid, requestId })
-                : await denyBoonRequest(teacher.uid, requestId);
+                ? await approveBoonRequest({ teacherUid: teacherUidToUse, requestId })
+                : await denyBoonRequest(teacherUidToUse, requestId);
             
             if (result.success) {
                 toast({ title: 'Success!', description: result.message });
