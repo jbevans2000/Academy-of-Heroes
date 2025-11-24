@@ -64,11 +64,10 @@ import { updateStudentStats } from '@/ai/flows/manage-student-stats';
 import { TeacherNotesDialog } from '@/components/teacher/teacher-notes-dialog';
 import { HpMpDialog } from '@/components/teacher/hp-mp-dialog';
 import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner';
+import type { Permissions } from '@/app/teacher/profile/page';
 
 
-interface TeacherData {
-    name: string;
-    className: string;
+interface TeacherData extends Teacher {
     classCode: string;
     pendingCleanupBattleId?: string;
     hasUnreadTeacherMessages?: boolean;
@@ -79,8 +78,7 @@ interface TeacherData {
     lastSeenBroadcastTimestamp?: any;
     isNewlyRegistered?: boolean;
     levelingTable?: { [level: number]: number };
-    accountType?: 'main' | 'co-teacher';
-    mainTeacherUid?: string;
+    permissions?: Permissions;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company' | 'inMeditation';
@@ -520,7 +518,7 @@ export default function Dashboard() {
         level: 1,
         questProgress: {},
         hubsCompleted: 0,
-        isNewlyApproved: true,
+        isNewlyRegistered: true,
         inBattle: false,
         inDuel: false,
       };
@@ -756,7 +754,7 @@ export default function Dashboard() {
                 }}
             />
             <div className="relative flex flex-col min-h-screen w-full">
-                <TeacherHeader />
+                <TeacherHeader permissions={teacherData?.permissions} />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <ImpersonationBanner />
                     <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
@@ -861,30 +859,36 @@ export default function Dashboard() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
-                                <DropdownMenuItem onClick={() => router.push('/teacher/guild-hall')}>
-                                    <Users className="mr-2 h-4 w-4" />
-                                    <span>The Guild Hall (Chat)</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
-                                    <BookOpen className="mr-2 h-4 w-4" />
-                                    <span>The Quest Archives</span>
-                                </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => router.push('/teacher/missions')}>
-                                    <Star className="mr-2 h-4 w-4" />
-                                    <span>Special Missions</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/teacher/boons')}>
-                                    <Star className="mr-2 h-4 w-4" />
-                                    <span>Guild Rewards</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
-                                    <Swords className="mr-2 h-4 w-4" />
-                                    <span>The Field of Battle</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/teacher/duels')}>
-                                    <Swords className="mr-2 h-4 w-4" />
-                                    <span>The Training Grounds</span>
-                                </DropdownMenuItem>
+                                {(!isCoTeacher || teacherData?.permissions?.canManageQuests) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
+                                        <BookOpen className="mr-2 h-4 w-4" />
+                                        <span>The Quest Archives</span>
+                                    </DropdownMenuItem>
+                                )}
+                                 {(!isCoTeacher || teacherData?.permissions?.canManageSpecialMissions) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/missions')}>
+                                        <Star className="mr-2 h-4 w-4" />
+                                        <span>Special Missions</span>
+                                    </DropdownMenuItem>
+                                )}
+                                 {(!isCoTeacher || teacherData?.permissions?.canManageRewards) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/boons')}>
+                                        <Star className="mr-2 h-4 w-4" />
+                                        <span>Guild Rewards</span>
+                                    </DropdownMenuItem>
+                                )}
+                                 {(!isCoTeacher || teacherData?.permissions?.canManageBattles) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
+                                        <Swords className="mr-2 h-4 w-4" />
+                                        <span>The Field of Battle</span>
+                                    </DropdownMenuItem>
+                                )}
+                                 {(!isCoTeacher || teacherData?.permissions?.canManageDuels) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/duels')}>
+                                        <Swords className="mr-2 h-4 w-4" />
+                                        <span>The Training Grounds</span>
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => router.push('/teacher/battles/summary')}>
                                     <BookHeart className="mr-2 h-4 w-4" />
                                     <span>Battle Archives</span>
@@ -893,10 +897,12 @@ export default function Dashboard() {
                                     <Trophy className="mr-2 h-4 w-4" />
                                     <span>View Leaderboard</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
-                                    <Wrench className="mr-2 h-4 w-4" />
-                                    <span>The Guild Leader's Toolkit</span>
-                                </DropdownMenuItem>
+                                {(!isCoTeacher || teacherData?.permissions?.canManageTools) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
+                                        <Wrench className="mr-2 h-4 w-4" />
+                                        <span>The Guild Leader's Toolkit</span>
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                         
@@ -909,22 +915,28 @@ export default function Dashboard() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
-                                 <DropdownMenuItem onClick={() => router.push('/teacher/bulk-add')} disabled={isCoTeacher}>
-                                    <Users className="mr-2 h-4 w-4" />
-                                    <span>Bulk Add Students</span>
-                                </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => router.push('/teacher/data-management')} disabled={isCoTeacher}>
-                                    <UserX className="mr-2 h-4 w-4" />
-                                    <span>Retire Heroes</span>
-                                </DropdownMenuItem>
+                                 {(!isCoTeacher || teacherData?.permissions?.canBulkAddStudents) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/bulk-add')}>
+                                        <Users className="mr-2 h-4 w-4" />
+                                        <span>Bulk Add Students</span>
+                                    </DropdownMenuItem>
+                                )}
+                                {(!isCoTeacher || teacherData?.permissions?.canDeleteStudents) && (
+                                     <DropdownMenuItem onClick={() => router.push('/teacher/data-management')}>
+                                        <UserX className="mr-2 h-4 w-4" />
+                                        <span>Retire Heroes</span>
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => router.push('/teacher/rewards')}>
                                     <Gift className="mr-2 h-4 w-4" />
                                     <span>Manage Rewards</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/teacher/companies')}>
-                                    <Users className="mr-2 h-4 w-4" />
-                                    <span>Manage Companies</span>
-                                </DropdownMenuItem>
+                                {(!isCoTeacher || teacherData?.permissions?.canManageCompanies) && (
+                                    <DropdownMenuItem onClick={() => router.push('/teacher/companies')}>
+                                        <Users className="mr-2 h-4 w-4" />
+                                        <span>Manage Companies</span>
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => router.push('/teacher/quests/completion')}>
                                     <Check className="mr-2 h-4 w-4" />
                                     <span>Manage Quest Completion</span>
@@ -942,10 +954,12 @@ export default function Dashboard() {
                                     <span>The Chronicler's Scroll</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => setIsReminderDialogOpen(true)}>
-                                    <Bell className="mr-2 h-4 w-4" />
-                                    Set Daily Reminder
-                                </DropdownMenuItem>
+                                {(!isCoTeacher || teacherData?.permissions?.canSetDailyReminder) && (
+                                    <DropdownMenuItem onClick={() => setIsReminderDialogOpen(true)}>
+                                        <Bell className="mr-2 h-4 w-4" />
+                                        Set Daily Reminder
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => setIsRegenDialogOpen(true)}>
                                     <HeartPulse className="mr-2 h-4 w-4" />
                                     Set Daily HP/MP Regen
@@ -1301,3 +1315,326 @@ export default function Dashboard() {
         </div>
       );
 }
+
+```
+- src/components/teacher/teacher-header.tsx:
+```tsx
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck, BookOpen } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { auth, db } from "@/lib/firebase";
+import { signOut, onAuthStateChanged, type User } from "firebase/auth";
+import { doc, getDoc, onSnapshot, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
+import { Bug, Lightbulb } from "lucide-react";
+import { TeacherAdminMessageDialog } from './teacher-admin-message-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Gamepad2 } from 'lucide-react';
+import type { Permissions } from '@/app/teacher/profile/page';
+
+
+interface TeacherHeaderProps {
+    isAdminPreview?: boolean;
+    permissions?: Permissions | null;
+}
+
+export function TeacherHeader({ isAdminPreview = false, permissions = null }: TeacherHeaderProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
+  const [teacher, setTeacher] = useState<User | null>(null);
+  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [hasUnreadAdminMessages, setHasUnreadAdminMessages] = useState(false);
+  const [hasNewBroadcasts, setHasNewBroadcasts] = useState(false);
+  const [isCoTeacher, setIsCoTeacher] = useState(false);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+        if(currentUser) {
+            setTeacher(currentUser);
+             const teacherDocRef = doc(db, 'teachers', currentUser.uid);
+            const teacherDocSnap = await getDoc(teacherDocRef);
+            if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                setIsCoTeacher(true);
+            }
+        }
+    });
+
+    const settingsRef = doc(db, 'settings', 'global');
+    const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setIsFeedbackPanelVisible(docSnap.data().isFeedbackPanelVisible || false);
+        }
+    });
+
+    return () => {
+        unsubscribeAuth();
+        unsubscribeSettings();
+    };
+  }, []);
+  
+  useEffect(() => {
+    if (!teacher) return;
+    
+    const teacherRef = doc(db, 'teachers', teacher.uid);
+    const unsubscribeTeacher = onSnapshot(teacherRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const teacherData = docSnap.data();
+            setHasUnreadAdminMessages(teacherData.hasUnreadAdminMessages || false);
+
+            const lastSeenTimestamp = teacherData.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
+            
+            // Check for new broadcasts
+            const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
+            const q = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
+            getDocs(q).then(snapshot => {
+                if (!snapshot.empty) {
+                    const latestBroadcast = snapshot.docs[0].data();
+                    if (latestBroadcast.sentAt) {
+                        const latestTimestamp = latestBroadcast.sentAt.toDate();
+                        if (latestTimestamp > lastSeenTimestamp) {
+                            setHasNewBroadcasts(true);
+                        } else {
+                            setHasNewBroadcasts(false);
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    return () => unsubscribeTeacher();
+  }, [teacher]);
+
+
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        toast({
+            title: 'Logged Out',
+            description: 'You have been successfully logged out.',
+        });
+        router.push('/');
+    } catch (error) {
+        console.error("Error signing out: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Logout Failed',
+            description: 'There was an issue signing you out. Please try again.',
+        });
+    }
+  };
+
+  return (
+    <>
+      <TeacherAdminMessageDialog isOpen={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen} />
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+        <Link href="/teacher/dashboard" className="flex items-center gap-2 font-semibold border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-3 py-2 transition-colors">
+          <School className="h-6 w-6 text-primary" />
+          <span className="text-xl">The Guild Leader's Podium</span>
+        </Link>
+        <div className="ml-auto flex items-center gap-2">
+          {isFeedbackPanelVisible && (
+              <>
+                  <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug')}>
+                      <Bug className="mr-2 h-4 w-4" /> Report a Bug
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature')}>
+                      <Lightbulb className="mr-2 h-4 w-4" /> Request a Feature
+                  </Button>
+              </>
+          )}
+          {isAdminPreview && (
+              <Button variant="secondary" onClick={() => router.push('/admin/dashboard')}>
+                  <Shield className="mr-2 h-5 w-5" />
+                  Return to Admin Dashboard
+              </Button>
+          )}
+           {(!isCoTeacher || permissions?.canManageSharedContent) && (
+             <Button variant="outline" onClick={() => router.push('/teacher/library')}>
+                <BookOpen className="mr-2 h-5 w-5" />
+                The Royal Library
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => router.push('/teacher/broadcasts')} className="relative">
+                <Rss className="mr-2 h-5 w-5" />
+                Announcements
+                {hasNewBroadcasts && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+            </Button>
+          <Button variant="outline" onClick={() => setIsMessageDialogOpen(true)} className="relative">
+              <MessageSquare className="mr-2 h-5 w-5" />
+              Contact Admin
+              {hasUnreadAdminMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+          </Button>
+           {(!isCoTeacher || permissions?.canEditProfile) && (
+                <Button variant="outline" onClick={() => router.push('/teacher/profile')}>
+                    <UserIcon className="mr-2 h-5 w-5" />
+                    My Profile
+                </Button>
+            )}
+          <Button variant="outline" onClick={() => router.push('/teacher/help')}>
+              <LifeBuoy className="mr-2 h-5 w-5" />
+              Help
+          </Button>
+          <Button onClick={handleLogout} className="bg-amber-500 hover:bg-amber-600 text-white">
+            <LogOut className="mr-2 h-5 w-5" />
+            Logout
+          </Button>
+        </div>
+      </header>
+    </>
+  );
+}
+
+```
+- src/components/teacher/teacher-message-dialog.tsx:
+```tsx
+
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import type { User } from 'firebase/auth';
+import type { Student, Message } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Send } from 'lucide-react';
+import { sendMessageToStudents } from '@/ai/flows/manage-messages';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { ClientOnlyTime } from '../client-only-time';
+
+
+interface TeacherMessageDialogProps {
+  teacher: User | null;
+  student: Student | null;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}
+
+export function TeacherMessageDialog({ teacher, student, isOpen, onOpenChange }: TeacherMessageDialogProps) {
+    const { toast } = useToast();
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!isOpen || !teacher || !student) {
+            return;
+        }
+
+        const messagesQuery = query(collection(db, 'teachers', teacher.uid, 'students', student.uid, 'messages'), orderBy('timestamp', 'asc'));
+        const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+            const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            setMessages(msgs);
+        });
+
+        return () => unsubscribe();
+    }, [isOpen, teacher, student]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(scrollToBottom, [messages]);
+
+    const handleSendMessage = async (e?: React.FormEvent) => {
+        if(e) e.preventDefault();
+        if (!teacher || !student || !newMessage.trim()) return;
+
+        setIsSending(true);
+        try {
+            const result = await sendMessageToStudents({
+                teacherUid: teacher.uid,
+                studentUids: [student.uid],
+                message: newMessage
+            });
+            if(result.success) {
+                setNewMessage('');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsSending(false);
+        }
+    };
+    
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl h-[80vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Message: {student?.characterName}</DialogTitle>
+                    <DialogDescription>
+                        This is your private message thread with {student?.studentName}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex-grow overflow-hidden">
+                    <ScrollArea className="h-full pr-4">
+                        <div className="space-y-4">
+                             {messages.map(msg => (
+                                <div key={msg.id} className={cn("flex flex-col", msg.sender === 'teacher' ? 'items-end' : 'items-start')}>
+                                    <div className={cn(
+                                        "p-3 rounded-lg max-w-[80%]",
+                                        msg.sender === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                                    )}>
+                                        <p>{msg.text}</p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                         {msg.timestamp ? <ClientOnlyTime date={new Date(msg.timestamp.seconds * 1000)} /> : 'Sending...'}
+                                    </p>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+                    </ScrollArea>
+                </div>
+                <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
+                    <Textarea 
+                        value={newMessage} 
+                        onChange={(e) => setNewMessage(e.target.value)} 
+                        placeholder="Type your message..."
+                        rows={2}
+                        onKeyDown={handleKeyDown}
+                        disabled={isSending}
+                    />
+                    <Button type="submit" disabled={isSending || !newMessage.trim()}>
+                        {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+```
