@@ -4,7 +4,7 @@
  * @fileOverview A server-side flow for managing co-teacher invitations.
  */
 
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -38,6 +38,10 @@ export async function inviteCoTeacher(
     const token = uuidv4();
     const invitationsRef = collection(db, 'coTeacherInvitations');
 
+    // Calculate expiration date (7 days from now)
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
     await addDoc(invitationsRef, {
       mainTeacherUid,
       mainTeacherName,
@@ -47,12 +51,12 @@ export async function inviteCoTeacher(
       status: 'pending',
       createdAt: serverTimestamp(),
       // Invitations expire after 7 days
-      expiresAt: serverTimestamp(),
+      expiresAt: Timestamp.fromDate(expiresAt),
     });
 
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const host = process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:9002';
-    const invitationLink = `${protocol}://${host}/register/co-teacher?token=${token}`;
+    const invitationLink = `${protocol}://${host}/teacher/register/co-teacher?token=${token}`;
 
     return { success: true, invitationLink };
   } catch (error: any) {

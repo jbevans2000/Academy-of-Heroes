@@ -31,12 +31,22 @@ export async function validateCoTeacherInvite(token: string): Promise<Validation
     const invitationDoc = querySnapshot.docs[0];
     const invitationData = invitationDoc.data();
     
-    const now = Timestamp.now();
-    const createdAt = invitationData.createdAt as Timestamp;
-    // Invitations are valid for 7 days
-    if (now.seconds - createdAt.seconds > 7 * 24 * 60 * 60) {
-        return { isValid: false, error: 'This invitation has expired. Please ask the main teacher to send a new one.' };
+    // Check if the invitation has an expiration date
+    if (invitationData.expiresAt) {
+        const now = Timestamp.now();
+        const expiresAt = invitationData.expiresAt as Timestamp;
+        if (now > expiresAt) {
+             return { isValid: false, error: 'This invitation has expired. Please ask the main teacher to send a new one.' };
+        }
+    } else {
+        // Fallback for older invites without an expiration date (7 days from creation)
+        const createdAt = invitationData.createdAt as Timestamp;
+        const now = Timestamp.now();
+        if (now.seconds - createdAt.seconds > 7 * 24 * 60 * 60) {
+             return { isValid: false, error: 'This invitation has expired. Please ask the main teacher to send a new one.' };
+        }
     }
+
 
     return {
         isValid: true,
