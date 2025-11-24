@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, where, getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +33,7 @@ interface GameLogEntry {
     seconds: number;
     nanoseconds: number;
   };
-  category: 'BOSS_BATTLE' | 'CHAPTER' | 'ACCOUNT' | 'GAMEMASTER';
+  category: 'BOSS_BATTLE' | 'CHAPTER' | 'ACCOUNT' | 'GAMEMASTER' | 'DUEL';
   description: string;
 }
 
@@ -46,11 +46,19 @@ export default function GameLogPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [teacher, setTeacher] = useState<User | null>(null);
+  const [teacherUidToUse, setTeacherUidToUse] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
             setTeacher(user);
+            const teacherDocRef = doc(db, 'teachers', user.uid);
+            const teacherDocSnap = await getDoc(teacherDocRef);
+            if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                setTeacherUidToUse(teacherDocSnap.data().mainTeacherUid);
+            } else {
+                setTeacherUidToUse(user.uid);
+            }
         } else {
             router.push('/teacher/login');
         }
@@ -59,10 +67,10 @@ export default function GameLogPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
 
     setIsLoading(true);
-    const logsQuery = query(collection(db, 'teachers', teacher.uid, 'gameLog'), orderBy('timestamp', 'desc'));
+    const logsQuery = query(collection(db, 'teachers', teacherUidToUse, 'gameLog'), orderBy('timestamp', 'desc'));
     
     const unsubscribe = onSnapshot(logsQuery, (querySnapshot) => {
       const logsData = querySnapshot.docs.map(doc => ({
@@ -78,7 +86,7 @@ export default function GameLogPage() {
     });
 
     return () => unsubscribe();
-  }, [teacher]);
+  }, [teacherUidToUse]);
   
   useEffect(() => {
       if (activeTab === 'all') {
@@ -89,10 +97,10 @@ export default function GameLogPage() {
   }, [activeTab, logs]);
 
   const handleClearLog = async () => {
-    if (!teacher) return;
+    if (!teacherUidToUse) return;
     setIsDeleting(true);
     try {
-        const result = await clearGameLog({ teacherUid: teacher.uid });
+        const result = await clearGameLog({ teacherUid: teacherUidToUse });
         if (result.success) {
             toast({ title: "Game Log Cleared", description: "All log entries have been permanently deleted." });
             // The onSnapshot listener will automatically update the UI to show an empty list.
@@ -190,9 +198,10 @@ export default function GameLogPage() {
             </CardHeader>
             <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-5">
+                    <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="all">All Events</TabsTrigger>
                         <TabsTrigger value="BOSS_BATTLE">Boss Battles</TabsTrigger>
+                        <TabsTrigger value="DUEL">Duels</TabsTrigger>
                         <TabsTrigger value="CHAPTER">Chapters</TabsTrigger>
                         <TabsTrigger value="ACCOUNT">Account</TabsTrigger>
                         <TabsTrigger value="GAMEMASTER">Gamemaster</TabsTrigger>

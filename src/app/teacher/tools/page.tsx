@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -42,6 +43,14 @@ const tools = [
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChooseChampion.jpg?alt=media&token=9d8a8624-c352-415e-84d8-827cebc711a5',
     },
+     {
+        title: 'Genetics Lab',
+        description: 'An interactive genetics lab where students explore dominant and recessive traits.',
+        icon: <Dna className="h-10 w-10 text-primary" />,
+        path: '/teacher/tools/genetics-lab',
+        disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-3ca79469-9069-4d64-b52b-422964b4c772.jpg?alt=media&token=0b61d334-0130-4e1b-9f9b-b01c3e38166d',
+    },
     {
         title: 'A Task from the Throne',
         description: 'Get fun, fantasy-themed activities for the class to do in real time.',
@@ -85,7 +94,7 @@ export default function ClassroomToolsPage() {
             <div className="absolute inset-0">
                 <Image
                     src={tool.bgImage}
-                    alt={`${'${tool.title}'} background`}
+                    alt={`${tool.title} background`}
                     fill
                     className="object-cover"
                     data-ai-hint="fantasy background"
