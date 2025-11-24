@@ -58,6 +58,7 @@ interface TeacherProfile {
     sagas?: string[];
     accountType?: 'main' | 'co-teacher';
     mainTeacherUid?: string;
+    permissions?: Permissions;
 }
 
 interface CoTeacher extends TeacherProfile {
@@ -270,16 +271,18 @@ export default function TeacherProfilePage() {
         return () => unsubscribe();
     }, [router]);
     
+    const isMainTeacher = profile.accountType !== 'co-teacher';
+
     // Fetch co-teachers
     useEffect(() => {
-        if (profile.accountType === 'main' && teacher) {
+        if (isMainTeacher && teacher) {
             const q = query(collection(db, 'teachers'), where('mainTeacherUid', '==', teacher.uid));
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 setCoTeachers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CoTeacher)));
             });
             return () => unsubscribe();
         }
-    }, [profile.accountType, teacher]);
+    }, [isMainTeacher, teacher]);
     
     const handleDeleteCoTeacher = async () => {
         if (!coTeacherToDelete) return;
@@ -388,8 +391,6 @@ export default function TeacherProfilePage() {
             setIsUploading(false);
         }
     }
-    
-    const isMainTeacher = profile.accountType !== 'co-teacher';
 
     if (isLoading) {
         return (
