@@ -193,14 +193,13 @@ export default function Dashboard() {
         const viewingTeacherId = searchParams.get('teacherId');
 
         let teacherIdToFetch: string | null = null;
-        let loggedInUser: User | null = null;
-
+        
         if (isAdmin && viewingTeacherId) {
             teacherIdToFetch = viewingTeacherId;
-            loggedInUser = { uid: viewingTeacherId } as User; // Create a mock user for data fetching
+            setTeacher({ uid: viewingTeacherId } as User); 
             setIsAdminPreview(true);
         } else {
-            loggedInUser = user;
+            setTeacher(user);
             const userDocRef = doc(db, 'teachers', user.uid);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
@@ -215,11 +214,8 @@ export default function Dashboard() {
             }
         }
         
-        if (loggedInUser) {
-            setTeacher(loggedInUser);
-        }
-
         if (teacherIdToFetch) {
+            // This part runs once we know which teacher's data to fetch.
             const checkWelcomeAndBroadcast = async () => {
                 const teacherRef = doc(db, 'teachers', teacherIdToFetch!);
                 const teacherSnap = await getDoc(teacherRef);
@@ -270,7 +266,6 @@ export default function Dashboard() {
     const setupListeners = async () => {
         let teacherUidToUse = teacher.uid;
 
-        // For co-teachers, we need to find the main teacher's UID to fetch the correct data
         const teacherDocRef = doc(db, 'teachers', teacher.uid);
         const teacherDocSnap = await getDoc(teacherDocRef);
         if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
@@ -283,7 +278,7 @@ export default function Dashboard() {
         }
       
         const teacherRef = doc(db, 'teachers', teacherUidToUse);
-        const unsubTeacher = onSnapshot(teacherRef, (teacherSnap) => {
+        unsubscribers.push(onSnapshot(teacherRef, (teacherSnap) => {
             if (teacherSnap.exists()) {
                 const data = teacherSnap.data() as TeacherData;
                 setTeacherData(data);
@@ -297,49 +292,36 @@ export default function Dashboard() {
                     }, 20000);
                 }
             }
-        });
-        unsubscribers.push(unsubTeacher);
+        }));
 
-        const studentsQuery = collection(db, "teachers", teacherUidToUse, "students");
-        const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
+        unsubscribers.push(onSnapshot(collection(db, "teachers", teacherUidToUse, "students"), (snapshot) => {
             const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
             setStudents(studentData);
             setIsLoading(false);
-        });
-        unsubscribers.push(unsubStudents);
+        }));
         
-        const pendingStudentsQuery = collection(db, "teachers", teacherUidToUse, "pendingStudents");
-        const unsubPending = onSnapshot(pendingStudentsQuery, (snapshot) => {
+        unsubscribers.push(onSnapshot(collection(db, "teachers", teacherUidToUse, "pendingStudents"), (snapshot) => {
             setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
-        });
-        unsubscribers.push(unsubPending);
+        }));
         
-        const companiesQuery = collection(db, 'teachers', teacherUidToUse, 'companies');
-        const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
+        unsubscribers.push(onSnapshot(collection(db, 'teachers', teacherUidToUse, 'companies'), (snapshot) => {
             const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
             setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
-        });
-        unsubscribers.push(unsubCompanies);
+        }));
 
-        const presenceRef = doc(db, 'teachers', teacherUidToUse, 'presence', 'online');
-        const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
+        unsubscribers.push(onSnapshot(doc(db, 'teachers', teacherUidToUse, 'presence', 'online'), (presenceSnap) => {
             const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
             const uids = Object.keys(presenceData).filter(uid => presenceData[uid]?.status === 'online');
             setOnlineUids(uids);
-        });
-        unsubscribers.push(unsubPresence);
+        }));
         
-        const hubsQuery = query(collection(db, 'teachers', teacherUidToUse, 'questHubs'), orderBy('hubOrder'));
-        const unsubHubs = onSnapshot(hubsQuery, (snapshot) => {
+        unsubscribers.push(onSnapshot(query(collection(db, 'teachers', teacherUidToUse, 'questHubs'), orderBy('hubOrder')), (snapshot) => {
             setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)))
-        });
-        unsubscribers.push(unsubHubs);
+        }));
         
-        const chaptersQuery = query(collection(db, 'teachers', teacherUidToUse, 'chapters'));
-        const unsubChapters = onSnapshot(chaptersQuery, (snapshot) => {
+        unsubscribers.push(onSnapshot(query(collection(db, 'teachers', teacherUidToUse, 'chapters')), (snapshot) => {
             setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
-        });
-        unsubscribers.push(unsubChapters);
+        }));
     }
     
     setupListeners();
@@ -796,7 +778,8 @@ export default function Dashboard() {
                                     <ol className="list-decimal list-inside space-y-2 pt-2 text-foreground text-lg">
                                         <li>Go to the main login page.</li>
                                         <li>Click "Forge Your Hero & Join a Guild".</li>
-                                        <li>Enter your Guild Code: 
+                                        <li>
+                                            Enter your Guild Code: 
                                             <strong className="font-mono text-xl bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
                                         </li>
                                         <li>Fill out the rest of the form to create their character.</li>
