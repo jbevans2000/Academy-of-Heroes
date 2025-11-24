@@ -29,7 +29,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { inviteCoTeacher } from '@/ai/flows/manage-co-teachers';
+import { createCoTeacherAccount } from '@/ai/flows/create-co-teacher';
 
 interface TeacherProfile {
     name: string;
@@ -49,82 +49,45 @@ function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: {
     const { toast } = useToast();
     const [inviteeName, setInviteeName] = useState('');
     const [inviteeEmail, setInviteeEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isInviting, setIsInviting] = useState(false);
-    const [generatedLink, setGeneratedLink] = useState('');
+    const [createdCredentials, setCreatedCredentials] = useState<{ email: string, pass: string } | null>(null);
 
     const handleInvite = async () => {
-        if (!teacher || !inviteeName || !inviteeEmail) {
-            toast({ variant: 'destructive', title: 'Missing Information' });
+        if (!teacher || !inviteeName || !inviteeEmail || !password || password !== confirmPassword) {
+            toast({ variant: 'destructive', title: 'Invalid Information', description: 'Please fill all fields and ensure passwords match.' });
             return;
         }
         setIsInviting(true);
-        setGeneratedLink('');
         try {
-            const result = await inviteCoTeacher({
-                mainTeacherUid: teacher.uid,
-                mainTeacherName: teacherName,
+            const result = await createCoTeacherAccount({
                 inviteeName,
                 inviteeEmail,
+                password,
+                mainTeacherUid: teacher.uid,
+                mainTeacherName: teacherName,
             });
-            if (result.success && result.invitationLink) {
-                setGeneratedLink(result.invitationLink);
-                toast({ title: 'Invitation Ready!', description: 'The invitation link has been generated.' });
+
+            if (result.success) {
+                setCreatedCredentials({ email: inviteeEmail, pass: password });
+                toast({ title: 'Co-Teacher Account Created!', description: 'Share the login details with your colleague.' });
             } else {
                 throw new Error(result.error);
             }
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Invitation Failed', description: error.message });
+            toast({ variant: 'destructive', title: 'Creation Failed', description: error.message });
         } finally {
             setIsInviting(false);
         }
     };
     
-    const copyLink = () => {
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(generatedLink).then(() => {
-                toast({ title: 'Link Copied!' });
-            }).catch(err => {
-                console.warn('Clipboard API failed, falling back.', err);
-                fallbackCopyTextToClipboard(generatedLink);
-            });
-        } else {
-            fallbackCopyTextToClipboard(generatedLink);
-        }
-    };
-
-    const fallbackCopyTextToClipboard = (text: string) => {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        
-        textArea.style.position = "fixed";
-        textArea.style.top = "0";
-        textArea.style.left = "0";
-        textArea.style.width = "2em";
-        textArea.style.height = "2em";
-        textArea.style.padding = "0";
-        textArea.style.border = "none";
-        textArea.style.outline = "none";
-        textArea.style.boxShadow = "none";
-        textArea.style.background = "transparent";
-
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        try {
-            document.execCommand('copy');
-            toast({ title: 'Link Copied!' });
-        } catch (err) {
-            toast({ variant: 'destructive', title: 'Copy Failed', description: 'Could not copy the link.' });
-        }
-
-        document.body.removeChild(textArea);
-    };
-
     const resetAndClose = () => {
         setInviteeName('');
         setInviteeEmail('');
-        setGeneratedLink('');
+        setPassword('');
+        setConfirmPassword('');
+        setCreatedCredentials(null);
         onOpenChange(false);
     };
 
@@ -132,20 +95,19 @@ function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: {
         <Dialog open={isOpen} onOpenChange={resetAndClose}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Invite a Co-Teacher</DialogTitle>
-                    <DialogDescription>
-                        Enter your co-teacher's name and email to generate a unique invitation link.
+                    <DialogTitle>{createdCredentials ? 'Account Created!' : 'Invite a Co-Teacher'}</DialogTitle>
+                     <DialogDescription>
+                        {createdCredentials 
+                            ? 'Share these temporary login credentials with your co-teacher. They can change their password after logging in.'
+                            : 'Create an account for your co-teacher. They will be able to manage your classroom.'
+                        }
                     </DialogDescription>
                 </DialogHeader>
-                 {generatedLink ? (
-                    <div className="space-y-4 py-4">
-                        <p className="font-semibold">Invitation Link Generated!</p>
-                        <p className="text-sm text-muted-foreground">Please copy this link and send it to your co-teacher. This is a single-use link.</p>
-                        <div className="flex items-center gap-2">
-                            <Input readOnly value={generatedLink} />
-                            <Button onClick={copyLink} size="icon">
-                                <Copy className="h-4 w-4" />
-                            </Button>
+                 {createdCredentials ? (
+                    <div className="py-4 space-y-4">
+                        <div className="p-4 rounded-md bg-secondary border">
+                            <p><strong>Email:</strong> {createdCredentials.email}</p>
+                            <p><strong>Password:</strong> {createdCredentials.pass}</p>
                         </div>
                     </div>
                 ) : (
@@ -158,14 +120,22 @@ function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: {
                             <Label htmlFor="invitee-email">Co-Teacher's Email</Label>
                             <Input id="invitee-email" type="email" value={inviteeEmail} onChange={(e) => setInviteeEmail(e.target.value)} disabled={isInviting} />
                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="initial-password">Set Initial Password</Label>
+                            <Input id="initial-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isInviting} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="confirm-initial-password">Confirm Password</Label>
+                            <Input id="confirm-initial-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={isInviting} />
+                        </div>
                     </div>
                 )}
                 <DialogFooter>
                     <Button variant="outline" onClick={resetAndClose}>Close</Button>
-                    {!generatedLink && (
-                        <Button onClick={handleInvite} disabled={isInviting || !inviteeName || !inviteeEmail}>
+                    {!createdCredentials && (
+                        <Button onClick={handleInvite} disabled={isInviting || !inviteeName || !inviteeEmail || !password || password !== confirmPassword}>
                             {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Generate Link
+                            Create Account
                         </Button>
                     )}
                 </DialogFooter>

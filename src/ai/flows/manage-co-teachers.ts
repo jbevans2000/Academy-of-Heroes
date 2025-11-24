@@ -1,69 +1,72 @@
 
 'use server';
-/**
- * @fileOverview A server-side flow for managing co-teacher invitations.
- */
 
-import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getAdminAuth } from '@/lib/firebaseAdmin';
+import { doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { v4 as uuidv4 } from 'uuid';
 
-interface InviteCoTeacherInput {
-  mainTeacherUid: string;
-  mainTeacherName: string;
-  inviteeName: string;
-  inviteeEmail: string;
+interface CreateCoTeacherInput {
+    mainTeacherUid: string;
+    mainTeacherName: string;
+    inviteeName: string;
+    inviteeEmail: string;
+    password:  string;
 }
 
-interface InviteCoTeacherResponse {
+interface ActionResponse {
   success: boolean;
-  invitationLink?: string;
+  message?: string;
   error?: string;
 }
 
-/**
- * Creates an invitation document in Firestore for a new co-teacher.
- * @returns A unique invitation link for the teacher to share.
- */
-export async function inviteCoTeacher(
-  input: InviteCoTeacherInput
-): Promise<InviteCoTeacherResponse> {
-  const { mainTeacherUid, mainTeacherName, inviteeName, inviteeEmail } = input;
+export async function createCoTeacherAccount(input: CreateCoTeacherInput): Promise<ActionResponse> {
+  const { mainTeacherUid, mainTeacherName, inviteeName, inviteeEmail, password } = input;
 
-  if (!mainTeacherUid || !inviteeName || !inviteeEmail) {
+  if (!mainTeacherUid || !inviteeName || !inviteeEmail || !password) {
     return { success: false, error: 'Missing required information.' };
+  }
+   if (password.length < 6) {
+    return { success: false, error: 'Password must be at least 6 characters long.' };
   }
 
   try {
-    const token = uuidv4();
-    const invitationsRef = collection(db, 'coTeacherInvitations');
-
-    // Calculate expiration date (7 days from now)
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    await addDoc(invitationsRef, {
-      mainTeacherUid,
-      mainTeacherName,
-      inviteeName,
-      inviteeEmail: inviteeEmail.toLowerCase(),
-      token,
-      status: 'pending',
-      createdAt: serverTimestamp(),
-      // Invitations expire after 7 days
-      expiresAt: Timestamp.fromDate(expiresAt),
+    const adminAuth = getAdminAuth();
+    
+    // 1. Create the user in Firebase Authentication
+    const userRecord = await adminAuth.createUser({
+      email: inviteeEmail,
+      emailVerified: true, // We can consider them verified as they are invited directly.
+      password: password,
+      displayName: inviteeName,
     });
+    
+    // 2. Create the co-teacher document in Firestore, linking it to the main teacher
+    const mainTeacherRef = doc(db, 'teachers', mainTeacherUid);
+    const mainTeacherSnap = await getDoc(mainTeacherRef);
+    const mainTeacherData = mainTeacherSnap.exists() ? mainTeacherSnap.data() : {};
+    
+    const teacherRef = doc(db, 'teachers', userRecord.uid);
+    await setDoc(teacherRef, {
+        uid: userRecord.uid,
+        name: inviteeName,
+        email: inviteeEmail,
+        // Copy essential details from main teacher
+        schoolName: mainTeacherData.schoolName || '',
+        className: mainTeacherData.className || '',
+        // Set co-teacher specific fields
+        accountType: 'co-teacher',
+        mainTeacherUid: mainTeacherUid,
+        createdAt: serverTimestamp(),
+    });
+    
+    return { success: true, message: 'Co-teacher account created successfully!' };
 
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const host = process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:9002';
-    const invitationLink = `${protocol}://${host}/teacher/register/co-teacher?token=${token}`;
-
-    return { success: true, invitationLink };
   } catch (error: any) {
-    console.error('Error creating co-teacher invitation:', error);
-    return {
-      success: false,
-      error: 'Could not create invitation. Please try again.',
-    };
+    console.error('Error creating co-teacher account:', error);
+    let errorMessage = 'An unexpected error occurred.';
+    if (error.code === 'auth/email-already-exists') {
+      errorMessage = 'An account with this email address already exists. They cannot be invited as a co-teacher if they already have an account.';
+    }
+    return { success: false, error: errorMessage };
   }
 }
