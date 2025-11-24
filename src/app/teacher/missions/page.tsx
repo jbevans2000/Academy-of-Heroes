@@ -11,7 +11,7 @@ import type { Student } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, BookMarked, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookMarked, Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -179,7 +179,7 @@ export default function StudentMissionsPage() {
                                                         <AlertDialogContent>
                                                             <AlertDialogHeader>
                                                                 <AlertDialogTitle>Delete "{mission.title}"?</AlertDialogTitle>
-                                                                <AlertDialogDescription>This will permanently delete this mission and all student submissions for it. This cannot be undone.</AlertDialogDescription>
+                                                                <AlertDialogDescription>This will permanently delete this mission and all student submissions for it. This action cannot be undone.</AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
