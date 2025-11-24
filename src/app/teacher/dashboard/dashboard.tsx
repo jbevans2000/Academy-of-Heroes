@@ -263,21 +263,20 @@ export default function Dashboard() {
   }, [searchParams, router]);
 
   useEffect(() => {
-    if (!teacher?.uid) return;
+    if (!teacher) return;
     
-    const getTeacherId = async () => {
-        const userDocRef = doc(db, 'teachers', teacher.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists() && userDocSnap.data().accountType === 'co-teacher') {
-            return userDocSnap.data().mainTeacherUid;
-        }
-        return teacher.uid;
-    }
-
     let unsubscribers: any[] = [];
     
     const setupListeners = async () => {
-        const teacherUidToUse = await getTeacherId();
+        let teacherUidToUse = teacher.uid;
+
+        // For co-teachers, we need to find the main teacher's UID to fetch the correct data
+        const teacherDocRef = doc(db, 'teachers', teacher.uid);
+        const teacherDocSnap = await getDoc(teacherDocRef);
+        if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+            teacherUidToUse = teacherDocSnap.data().mainTeacherUid;
+        }
+        
         if (!teacherUidToUse) {
             setIsLoading(false);
             return;
@@ -1325,3 +1324,289 @@ export default function Dashboard() {
         </div>
       );
 }
+
+```
+- src/hooks/use-toast.ts:
+```tsx
+
+"use client"
+
+// Inspired by react-hot-toast library
+import * as React from "react"
+
+import type {
+  ToastActionElement,
+  ToastProps,
+} from "@/components/ui/toast"
+
+const TOAST_LIMIT = 3
+const TOAST_REMOVE_DELAY = 1000000
+
+type ToasterToast = ToastProps & {
+  id: string
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: ToastActionElement
+}
+
+const actionTypes = {
+  ADD_TOAST: "ADD_TOAST",
+  UPDATE_TOAST: "UPDATE_TOAST",
+  DISMISS_TOAST: "DISMISS_TOAST",
+  REMOVE_TOAST: "REMOVE_TOAST",
+} as const
+
+let count = 0
+
+function genId() {
+  count = (count + 1) % Number.MAX_SAFE_INTEGER
+  return count.toString()
+}
+
+type ActionType = typeof actionTypes
+
+type Action =
+  | {
+      type: ActionType["ADD_TOAST"]
+      toast: ToasterToast
+    }
+  | {
+      type: ActionType["UPDATE_TOAST"]
+      toast: Partial<ToasterToast>
+    }
+  | {
+      type: ActionType["DISMISS_TOAST"]
+      toastId?: ToasterToast["id"]
+    }
+  | {
+      type: ActionType["REMOVE_TOAST"]
+      toastId?: ToasterToast["id"]
+    }
+
+interface State {
+  toasts: ToasterToast[]
+}
+
+const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+
+const addToRemoveQueue = (toastId: string) => {
+  if (toastTimeouts.has(toastId)) {
+    return
+  }
+
+  const timeout = setTimeout(() => {
+    toastTimeouts.delete(toastId)
+    dispatch({
+      type: "REMOVE_TOAST",
+      toastId: toastId,
+    })
+  }, TOAST_REMOVE_DELAY)
+
+  toastTimeouts.set(toastId, timeout)
+}
+
+export const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case "ADD_TOAST":
+      return {
+        ...state,
+        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+      }
+
+    case "UPDATE_TOAST":
+      return {
+        ...state,
+        toasts: state.toasts.map((t) =>
+          t.id === action.toast.id ? { ...t, ...action.toast } : t
+        ),
+      }
+
+    case "DISMISS_TOAST": {
+      const { toastId } = action
+
+      // ! Side effects ! - This could be extracted into a dismissToast() action,
+      // but I'll keep it here for simplicity
+      if (toastId) {
+        addToRemoveQueue(toastId)
+      } else {
+        state.toasts.forEach((toast) => {
+          addToRemoveQueue(toast.id)
+        })
+      }
+
+      return {
+        ...state,
+        toasts: state.toasts.map((t) =>
+          t.id === toastId || toastId === undefined
+            ? {
+                ...t,
+                open: false,
+              }
+            : t
+        ),
+      }
+    }
+    case "REMOVE_TOAST":
+      if (action.toastId === undefined) {
+        return {
+          ...state,
+          toasts: [],
+        }
+      }
+      return {
+        ...state,
+        toasts: state.toasts.filter((t) => t.id !== action.toastId),
+      }
+  }
+}
+
+const listeners: Array<(state: State) => void> = []
+
+let memoryState: State = { toasts: [] }
+
+function dispatch(action: Action) {
+  memoryState = reducer(memoryState, action)
+  listeners.forEach((listener) => {
+    listener(memoryState)
+  })
+}
+
+type Toast = Omit<ToasterToast, "id">
+
+function toast({ ...props }: Toast) {
+  const id = genId()
+
+  const update = (props: ToasterToast) =>
+    dispatch({
+      type: "UPDATE_TOAST",
+      toast: { ...props, id },
+    })
+  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+
+  dispatch({
+    type: "ADD_TOAST",
+    toast: {
+      ...props,
+      id,
+      open: true,
+      onOpenChange: (open) => {
+        if (!open) dismiss()
+      },
+    },
+  })
+
+  return {
+    id: id,
+    dismiss,
+    update,
+  }
+}
+
+function useToast() {
+  const [state, setState] = React.useState<State>(memoryState)
+
+  React.useEffect(() => {
+    listeners.push(setState)
+    return () => {
+      const index = listeners.indexOf(setState)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }, [state])
+
+  return {
+    ...state,
+    toast,
+    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+  }
+}
+
+export { useToast, toast }
+
+```
+- src/lib/firebaseAdmin.ts:
+```ts
+/**
+ * SACROSANCT: DO NOT TOUCH
+ * This file contains the working and tested Firebase Admin SDK initialization logic.
+ * It is critical for server-side operations.
+ * DO NOT MODIFY this file or any functions within it under any circumstances.
+ */
+
+'use server';
+// src/lib/firebaseAdmin.ts
+import type { App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import type { Auth } from 'firebase-admin/auth';
+import type { Firestore } from 'firebase-admin/firestore';
+import serviceAccount from './firebase-admin-creds.json';
+
+const ADMIN_APP_NAME = 'firebase-admin-app-do-not-delete';
+
+function getFirebaseAdminApp(): App {
+    
+    // This is the "correct" way to check for an existing app in serverless environments
+    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
+    if(existingApp) {
+        return existingApp;
+    }
+
+    return initializeApp({
+        credential: cert(serviceAccount),
+    }, ADMIN_APP_NAME);
+}
+
+function getAdminAuth(): Auth {
+    return getAuth(getFirebaseAdminApp());
+}
+
+function getAdminDb(): Firestore {
+    return getFirestore(getFirebaseAdminApp());
+}
+
+export { getFirebaseAdminApp, getAdminAuth, getAdminDb };
+
+```
+- src/lib/utils.ts:
+```ts
+
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+export function downloadCsv(data: string[][], headers: string[], filename: string) {
+  const csvRows = [
+    headers.join(','), // header row
+    ...data.map(row => {
+        return row.map(field => {
+            const strField = String(field);
+            // Handle fields containing commas, double quotes, or newlines
+            if (strField.includes(',') || strField.includes('"') || strField.includes('\n')) {
+                return `"${strField.replace(/"/g, '""')}"`;
+            }
+            return strField;
+        }).join(',');
+    }) // data rows
+  ];
+
+  const csvString = csvRows.join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.setAttribute('hidden', '');
+  a.setAttribute('href', url);
+  a.setAttribute('download', filename);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+```
