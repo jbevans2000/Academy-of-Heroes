@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import type { Boon } from '@/lib/boons';
@@ -29,29 +29,40 @@ export default function ManageRewardsPage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [teacherUidToUse, setTeacherUidToUse] = useState<string | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [rewards, setRewards] = useState<Boon[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState<string | null>(null); // studentUid-boonId
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, user => {
-            if (user) setTeacher(user);
-            else router.push('/teacher/login');
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                setTeacher(user);
+                const teacherDocRef = doc(db, 'teachers', user.uid);
+                const teacherDocSnap = await getDoc(teacherDocRef);
+                if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                    setTeacherUidToUse(teacherDocSnap.data().mainTeacherUid);
+                } else {
+                    setTeacherUidToUse(user.uid);
+                }
+            } else {
+                router.push('/teacher/login');
+            }
         });
         return () => unsubscribe();
     }, [router]);
 
     useEffect(() => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         
-        const studentsQuery = query(collection(db, 'teachers', teacher.uid, 'students'), orderBy('studentName'));
+        const studentsQuery = query(collection(db, 'teachers', teacherUidToUse, 'students'), orderBy('studentName'));
         const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
             setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
             setIsLoading(false);
         });
 
-        const rewardsQuery = query(collection(db, 'teachers', teacher.uid, 'boons'), orderBy('name'));
+        const rewardsQuery = query(collection(db, 'teachers', teacherUidToUse, 'boons'), orderBy('name'));
         const unsubRewards = onSnapshot(rewardsQuery, (snapshot) => {
             setRewards(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
         });
@@ -60,15 +71,15 @@ export default function ManageRewardsPage() {
             unsubStudents();
             unsubRewards();
         };
-    }, [teacher]);
+    }, [teacherUidToUse]);
 
     const handleInventoryChange = async (studentUid: string, boonId: string, change: number) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         const updateKey = `${studentUid}-${boonId}`;
         setIsUpdating(updateKey);
         try {
             const result = await adjustStudentInventory({
-                teacherUid: teacher.uid,
+                teacherUid: teacherUidToUse,
                 studentUid,
                 boonId,
                 change
