@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, ArrowLeft, CreditCard, Upload, PlusCircle, Trash2, UserPlus, Copy, Edit } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, CreditCard, Upload, PlusCircle, Trash2, UserPlus, Copy, Edit, UserX } from 'lucide-react';
 import { updateTeacherProfile } from '@/ai/flows/manage-teacher';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Textarea } from '@/components/ui/textarea';
