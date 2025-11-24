@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, updateDoc, onSnapshot, query, where } from 'firebase/firestore';
 import { auth, db, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -29,7 +29,21 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { createCoTeacherAccount } from '@/ai/flows/create-co-teacher';
+import { deleteTeacher } from '@/ai/flows/admin-actions';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TeacherProfile {
     name: string;
@@ -43,22 +57,76 @@ interface TeacherProfile {
     avatarUrl?: string;
     sagas?: string[];
     accountType?: 'main' | 'co-teacher';
+    mainTeacherUid?: string;
 }
+
+interface CoTeacher extends TeacherProfile {
+    id: string;
+    email: string;
+}
+
+const allPermissions = {
+    canEditProfile: { label: "Edit Profile", default: true },
+    canManageQuests: { label: "Manage Quests & Chapters", default: true },
+    canManageBattles: { label: "Manage Boss Battles", default: true },
+    canManageRewards: { label: "Manage Guild Rewards Store", default: true },
+    canManageStudents: { label: "Manage Students (Edit, Award, etc.)", default: true },
+    canManageCompanies: { label: "Manage Companies", default: true },
+    canManageDuels: { label: "Manage Training Grounds", default: true },
+    canManageTools: { label: "Use Classroom Tools", default: true },
+    canManageSharedContent: { label: "Share Content to Royal Library", default: true },
+    canBulkAddStudents: { label: "Bulk Add Students", default: false },
+    canDeleteStudents: { label: "Retire Heroes (Delete Students)", default: false },
+};
+
+type Permissions = Record<keyof typeof allPermissions, boolean>;
+
 
 function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: { isOpen: boolean, onOpenChange: (open: boolean) => void, teacher: User | null, teacherName: string }) {
     const { toast } = useToast();
+    const [step, setStep] = useState(1);
     const [inviteeName, setInviteeName] = useState('');
     const [inviteeEmail, setInviteeEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [permissions, setPermissions] = useState<Permissions>(() => 
+        Object.entries(allPermissions).reduce((acc, [key, { default: defaultValue }]) => {
+            (acc as any)[key] = defaultValue;
+            return acc;
+        }, {} as Permissions)
+    );
+
     const [isInviting, setIsInviting] = useState(false);
     const [createdCredentials, setCreatedCredentials] = useState<{ email: string, pass: string } | null>(null);
 
-    const handleInvite = async () => {
-        if (!teacher || !inviteeName || !inviteeEmail || !password || password !== confirmPassword) {
+    const resetState = () => {
+        setStep(1);
+        setInviteeName('');
+        setInviteeEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setCreatedCredentials(null);
+        setPermissions(
+            Object.entries(allPermissions).reduce((acc, [key, { default: defaultValue }]) => {
+            (acc as any)[key] = defaultValue;
+            return acc;
+        }, {} as Permissions));
+    };
+
+    const handleNext = () => {
+        if (!inviteeName || !inviteeEmail || !password || password !== confirmPassword) {
             toast({ variant: 'destructive', title: 'Invalid Information', description: 'Please fill all fields and ensure passwords match.' });
             return;
         }
+        if (password.length < 6) {
+             toast({ variant: 'destructive', title: 'Password Too Short', description: 'Password must be at least 6 characters.' });
+            return;
+        }
+        setStep(2);
+    }
+
+    const handleInvite = async () => {
+        if (!teacher) return;
         setIsInviting(true);
         try {
             const result = await createCoTeacherAccount({
@@ -67,10 +135,12 @@ function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: {
                 password,
                 mainTeacherUid: teacher.uid,
                 mainTeacherName: teacherName,
+                permissions,
             });
 
             if (result.success) {
                 setCreatedCredentials({ email: inviteeEmail, pass: password });
+                setStep(3); // Go to success step
                 toast({ title: 'Co-Teacher Account Created!', description: 'Share the login details with your colleague.' });
             } else {
                 throw new Error(result.error);
@@ -82,68 +152,76 @@ function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: {
         }
     };
     
-    const resetAndClose = () => {
-        setInviteeName('');
-        setInviteeEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        setCreatedCredentials(null);
-        onOpenChange(false);
-    };
+    const handlePermissionChange = (key: keyof Permissions, checked: boolean) => {
+        setPermissions(prev => ({ ...prev, [key]: checked }));
+    }
 
     return (
-        <Dialog open={isOpen} onOpenChange={resetAndClose}>
-            <DialogContent>
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetState(); onOpenChange(open); }}>
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>{createdCredentials ? 'Account Created!' : 'Invite a Co-Teacher'}</DialogTitle>
+                    <DialogTitle>{createdCredentials ? 'Account Created!' : `Invite Co-Teacher (Step ${step}/2)`}</DialogTitle>
                      <DialogDescription>
-                        {createdCredentials 
-                            ? 'Share these temporary login credentials with your co-teacher. They can change their password after logging in.'
-                            : 'Create an account for your co-teacher. They will be able to manage your classroom.'
-                        }
+                        {step === 1 && "Create an account for your co-teacher. They will be able to help manage your classroom."}
+                        {step === 2 && "Set the permissions for this co-teacher. They can be edited later."}
+                        {step === 3 && "Share these temporary login credentials with your co-teacher. They can change their password after logging in."}
                     </DialogDescription>
                 </DialogHeader>
-                 {createdCredentials ? (
+                {step === 1 && (
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="invitee-name">Co-Teacher's Name</Label>
+                            <Input id="invitee-name" value={inviteeName} onChange={(e) => setInviteeName(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="invitee-email">Co-Teacher's Email</Label>
+                            <Input id="invitee-email" type="email" value={inviteeEmail} onChange={(e) => setInviteeEmail(e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="initial-password">Set Initial Password</Label>
+                            <Input id="initial-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="confirm-initial-password">Confirm Password</Label>
+                            <Input id="confirm-initial-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        </div>
+                    </div>
+                )}
+                 {step === 2 && (
+                    <ScrollArea className="h-72 w-full rounded-md border p-4">
+                        <div className="space-y-4">
+                            {Object.entries(allPermissions).map(([key, { label }]) => (
+                                <div key={key} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`perm-${key}`}
+                                        checked={permissions[key as keyof Permissions]}
+                                        onCheckedChange={(checked) => handlePermissionChange(key as keyof Permissions, !!checked)}
+                                    />
+                                    <Label htmlFor={`perm-${key}`}>{label}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                )}
+                 {step === 3 && createdCredentials && (
                     <div className="py-4 space-y-4">
                         <div className="p-4 rounded-md bg-secondary border">
                             <p><strong>Email:</strong> {createdCredentials.email}</p>
                             <p><strong>Password:</strong> {createdCredentials.pass}</p>
                         </div>
                     </div>
-                ) : (
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="invitee-name">Co-Teacher's Name</Label>
-                            <Input id="invitee-name" value={inviteeName} onChange={(e) => setInviteeName(e.target.value)} disabled={isInviting} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="invitee-email">Co-Teacher's Email</Label>
-                            <Input id="invitee-email" type="email" value={inviteeEmail} onChange={(e) => setInviteeEmail(e.target.value)} disabled={isInviting} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="initial-password">Set Initial Password</Label>
-                            <Input id="initial-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isInviting} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="confirm-initial-password">Confirm Password</Label>
-                            <Input id="confirm-initial-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={isInviting} />
-                        </div>
-                    </div>
                 )}
                 <DialogFooter>
-                    <Button variant="outline" onClick={resetAndClose}>Close</Button>
-                    {!createdCredentials && (
-                        <Button onClick={handleInvite} disabled={isInviting || !inviteeName || !inviteeEmail || !password || password !== confirmPassword}>
-                            {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Account
-                        </Button>
-                    )}
+                    {step === 1 && <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>}
+                    {step === 1 && <Button onClick={handleNext}>Next: Set Permissions</Button>}
+                    {step === 2 && <Button variant="outline" onClick={() => setStep(1)}>Back</Button>}
+                    {step === 2 && <Button onClick={handleInvite} disabled={isInviting}>{isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create Account</Button>}
+                    {step === 3 && <Button onClick={() => { onOpenChange(false); resetState(); }}>Close</Button>}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
-
 
 export default function TeacherProfilePage() {
     const router = useRouter();
@@ -156,16 +234,18 @@ export default function TeacherProfilePage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isBeta, setIsBeta] = useState(false);
 
-    // New state for avatar upload
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
-    // New state for sagas
     const [newSagaName, setNewSagaName] = useState('');
-
-    // New state for co-teacher dialog
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+    
+    // New state for managing co-teachers
+    const [coTeachers, setCoTeachers] = useState<CoTeacher[]>([]);
+    const [coTeacherToDelete, setCoTeacherToDelete] = useState<CoTeacher | null>(null);
+    const [isDeletingCoTeacher, setIsDeletingCoTeacher] = useState(false);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -189,6 +269,36 @@ export default function TeacherProfilePage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    // Fetch co-teachers
+    useEffect(() => {
+        if (profile.accountType === 'main' && teacher) {
+            const q = query(collection(db, 'teachers'), where('mainTeacherUid', '==', teacher.uid));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                setCoTeachers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CoTeacher)));
+            });
+            return () => unsubscribe();
+        }
+    }, [profile.accountType, teacher]);
+    
+    const handleDeleteCoTeacher = async () => {
+        if (!coTeacherToDelete) return;
+        setIsDeletingCoTeacher(true);
+        try {
+            const result = await deleteTeacher(coTeacherToDelete.id);
+            if(result.success) {
+                toast({ title: 'Co-Teacher Removed', description: `${coTeacherToDelete.name} has been removed from your guild.` });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
+        } finally {
+            setIsDeletingCoTeacher(false);
+            setCoTeacherToDelete(null);
+        }
+    };
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -279,7 +389,7 @@ export default function TeacherProfilePage() {
         }
     }
     
-    const isCoTeacher = profile.accountType === 'co-teacher';
+    const isMainTeacher = profile.accountType !== 'co-teacher';
 
     if (isLoading) {
         return (
@@ -299,10 +409,27 @@ export default function TeacherProfilePage() {
     return (
         <>
             <InviteCoTeacherDialog isOpen={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} teacher={teacher} teacherName={profile.name} />
+             <AlertDialog open={!!coTeacherToDelete} onOpenChange={() => setCoTeacherToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Co-Teacher?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to remove {coTeacherToDelete?.name}? Their account will be permanently deleted, and they will lose access to your guild.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteCoTeacher} disabled={isDeletingCoTeacher} className="bg-destructive hover:bg-destructive/90">
+                            {isDeletingCoTeacher && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Yes, Remove Co-Teacher
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <div 
                 className="flex min-h-screen w-full flex-col bg-cover bg-center"
                 style={{
-                  backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
+                  backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
                 }}
             >
                 <TeacherHeader />
@@ -373,58 +500,76 @@ export default function TeacherProfilePage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-card/90 backdrop-blur-sm">
-                            <CardHeader>
-                                <CardTitle>My Sagas</CardTitle>
-                                <CardDescription>Create names for overarching storylines that connect multiple Quest Hubs.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="new-saga-name">New Saga Name</Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            id="new-saga-name"
-                                            value={newSagaName}
-                                            onChange={(e) => setNewSagaName(e.target.value)}
-                                            placeholder="e.g., The Dragon's Awakening"
-                                        />
-                                        <Button onClick={handleAddSaga}>
-                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Saga
-                                        </Button>
-                                    </div>
-                                </div>
-                                <Separator />
-                                <div>
-                                    <h4 className="font-semibold mb-2">Existing Sagas:</h4>
+                        {isMainTeacher && (
+                             <Card className="bg-card/90 backdrop-blur-sm">
+                                <CardHeader>
+                                    <CardTitle>My Sagas</CardTitle>
+                                    <CardDescription>Create names for overarching storylines that connect multiple Quest Hubs.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        {(profile.sagas && profile.sagas.length > 0) ? (
-                                            profile.sagas.map((saga, index) => (
-                                                <div key={index} className="flex items-center justify-between p-2 bg-secondary rounded-md">
-                                                    <span className="font-medium">{saga}</span>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveSaga(index)}>
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground">You haven't created any sagas yet.</p>
-                                        )}
+                                        <Label htmlFor="new-saga-name">New Saga Name</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                id="new-saga-name"
+                                                value={newSagaName}
+                                                onChange={(e) => setNewSagaName(e.target.value)}
+                                                placeholder="e.g., The Dragon's Awakening"
+                                            />
+                                            <Button onClick={handleAddSaga}>
+                                                <PlusCircle className="mr-2 h-4 w-4" /> Add Saga
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    <Separator />
+                                    <div>
+                                        <h4 className="font-semibold mb-2">Existing Sagas:</h4>
+                                        <div className="space-y-2">
+                                            {(profile.sagas && profile.sagas.length > 0) ? (
+                                                profile.sagas.map((saga, index) => (
+                                                    <div key={index} className="flex items-center justify-between p-2 bg-secondary rounded-md">
+                                                        <span className="font-medium">{saga}</span>
+                                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveSaga(index)}>
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">You haven't created any sagas yet.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                         
-                        {!isCoTeacher && (
+                        {isMainTeacher && (
                              <Card className="bg-card/90 backdrop-blur-sm">
                                 <CardHeader>
                                     <CardTitle>Co-Teacher Management</CardTitle>
-                                    <CardDescription>Invite other teachers to help manage your guild.</CardDescription>
+                                    <CardDescription>Invite and manage teachers who can help run your guild.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <Button onClick={() => setIsInviteDialogOpen(true)}>
                                         <UserPlus className="mr-2 h-4 w-4" />
                                         Invite a Co-Teacher
                                     </Button>
+                                    <div className="mt-4 space-y-2">
+                                        <h4 className="font-semibold">Current Co-Teachers:</h4>
+                                        {coTeachers.length > 0 ? (
+                                            coTeachers.map(ct => (
+                                                <div key={ct.id} className="flex justify-between items-center p-2 border rounded-md">
+                                                    <div>
+                                                        <p className="font-medium">{ct.name}</p>
+                                                        <p className="text-sm text-muted-foreground">{ct.email}</p>
+                                                    </div>
+                                                    <Button variant="destructive" size="sm" onClick={() => setCoTeacherToDelete(ct)}>Remove</Button>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">You have not invited any co-teachers.</p>
+                                        )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         )}
