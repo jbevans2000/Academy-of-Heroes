@@ -20,13 +20,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Gamepad2 } from 'lucide-react';
+import type { Permissions } from '@/app/teacher/profile/page';
 
 
 interface TeacherHeaderProps {
     isAdminPreview?: boolean;
+    permissions?: Permissions;
 }
 
-export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
+export function TeacherHeader({ isAdminPreview = false, permissions }: TeacherHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
@@ -124,10 +126,10 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
         <div className="ml-auto flex items-center gap-2">
           {isFeedbackPanelVisible && (
               <>
-                  <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug')}>
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug')}>
                       <Bug className="mr-2 h-4 w-4" /> Report a Bug
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature')}>
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature')}>
                       <Lightbulb className="mr-2 h-4 w-4" /> Request a Feature
                   </Button>
               </>
@@ -138,7 +140,7 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
                   Return to Admin Dashboard
               </Button>
           )}
-          {!isCoTeacher && (
+          {(!isCoTeacher || permissions?.canManageSharedContent) && (
             <Button variant="outline" onClick={() => router.push('/teacher/library')}>
                 <BookOpen className="mr-2 h-5 w-5" />
                 The Royal Library

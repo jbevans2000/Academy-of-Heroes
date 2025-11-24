@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import jsPDF from 'jspdf';
 import Image from 'next/image';
+import type { Permissions } from '@/app/teacher/profile/page';
 
 
 interface GuildHallMessage {
@@ -49,7 +50,7 @@ export default function GuildHallPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
-    const [teacherData, setTeacherData] = useState<Teacher | null>(null);
+    const [teacherData, setTeacherData] = useState<Teacher & { permissions?: Permissions } | null>(null);
     const [mainTeacherUid, setMainTeacherUid] = useState<string | null>(null);
     const [messages, setMessages] = useState<GuildHallMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -89,7 +90,6 @@ export default function GuildHallPage() {
         const mainTeacherRef = doc(db, 'teachers', mainTeacherUid);
         unsubscribers.push(onSnapshot(mainTeacherRef, (docSnap) => {
              if (docSnap.exists()) {
-                // We read settings from the main teacher, but the local teacherData holds the logged-in user's name
                 const mainData = docSnap.data();
                 setTeacherData(prev => ({
                     ...prev!,
@@ -115,6 +115,22 @@ export default function GuildHallPage() {
         };
 
     }, [mainTeacherUid]);
+
+    if (teacherData && teacherData.accountType === 'co-teacher' && !teacherData.permissions?.canAccessGuildHall) {
+        return (
+             <div className="flex min-h-screen w-full flex-col items-center justify-center p-4">
+                <Card className="max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle>Access Denied</CardTitle>
+                        <CardDescription>You do not have permission to access the Guild Hall.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => router.push('/teacher/dashboard')}>Return to Dashboard</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -223,6 +239,8 @@ export default function GuildHallPage() {
     const isChatEnabled = teacherData?.isChatEnabled ?? true;
     const isCompanyChatActive = teacherData?.isCompanyChatActive ?? false;
 
+    const filteredMessages = messages; // Teacher sees all messages regardless of company mode
+
     return (
         <div className="relative flex min-h-screen w-full flex-col">
             <div 
@@ -235,7 +253,7 @@ export default function GuildHallPage() {
                     opacity: 0.4,
                 }}
             />
-            <TeacherHeader />
+            <TeacherHeader permissions={teacherData?.permissions} />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-4">
                     <div className="flex justify-between items-center">
@@ -308,10 +326,10 @@ export default function GuildHallPage() {
                                                 <AlertDescription>You have currently disabled the Guild Hall chat for students.</AlertDescription>
                                             </Alert>
                                         </div>
-                                    ) : messages.length === 0 ? (
+                                    ) : filteredMessages.length === 0 ? (
                                         <p className="text-center text-muted-foreground">The hall is quiet... be the first to speak!</p>
                                     ) : (
-                                        messages.map(msg => (
+                                        filteredMessages.map(msg => (
                                             <div key={msg.id} className="flex items-start gap-3">
                                                 <div className="w-8 h-8 rounded-full flex-shrink-0" style={getCompanyColor(msg.companyId)} />
                                                 <div className="flex-grow">
