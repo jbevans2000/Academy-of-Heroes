@@ -8,7 +8,7 @@
 /**
  * @fileOverview A secure, server-side flow for admin-only actions like deleting users.
  */
-import { doc, writeBatch, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, writeBatch, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { getAdminAuth, getAdminDb } from '@/lib/firebaseAdmin'; // Use lazy getter
 import { db } from '@/lib/firebase'; // Client-side for batch writes
 
@@ -65,6 +65,21 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
 
     try {
         const adminDb = getAdminDb(); // Get DB instance when needed
+        
+        // --- New Step: Find and delete co-teachers ---
+        const coTeachersQuery = query(collection(db, 'teachers'), where('mainTeacherUid', '==', teacherUid));
+        const coTeachersSnapshot = await getDocs(coTeachersQuery);
+
+        if (!coTeachersSnapshot.empty) {
+            console.log(`Found ${coTeachersSnapshot.size} co-teacher(s) to delete for main teacher ${teacherUid}.`);
+            for (const coTeacherDoc of coTeachersSnapshot.docs) {
+                // Recursively call this function to delete the co-teacher and their associated data.
+                // This is safe because co-teachers cannot have their own co-teachers.
+                await deleteTeacher(coTeacherDoc.id);
+            }
+        }
+        // --- End of new step ---
+
         const batch = writeBatch(db);
         const subcollections = [
             'students', 'pendingStudents', 'questHubs', 'chapters', 'bossBattles',
