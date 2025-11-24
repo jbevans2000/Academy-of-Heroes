@@ -14,13 +14,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, ArrowLeft, CreditCard, Upload, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, CreditCard, Upload, PlusCircle, Trash2, UserPlus, Copy } from 'lucide-react';
 import { updateTeacherProfile } from '@/ai/flows/manage-teacher';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { inviteCoTeacher } from '@/ai/flows/manage-co-teachers';
 
 interface TeacherProfile {
     name: string;
@@ -32,8 +41,101 @@ interface TeacherProfile {
     bio?: string;
     subjectsTaught?: string[];
     avatarUrl?: string;
-    sagas?: string[]; // New field
+    sagas?: string[];
 }
+
+function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: { isOpen: boolean, onOpenChange: (open: boolean) => void, teacher: User | null, teacherName: string }) {
+    const { toast } = useToast();
+    const [inviteeName, setInviteeName] = useState('');
+    const [inviteeEmail, setInviteeEmail] = useState('');
+    const [isInviting, setIsInviting] = useState(false);
+    const [generatedLink, setGeneratedLink] = useState('');
+
+    const handleInvite = async () => {
+        if (!teacher || !inviteeName || !inviteeEmail) {
+            toast({ variant: 'destructive', title: 'Missing Information' });
+            return;
+        }
+        setIsInviting(true);
+        setGeneratedLink('');
+        try {
+            const result = await inviteCoTeacher({
+                mainTeacherUid: teacher.uid,
+                mainTeacherName: teacherName,
+                inviteeName,
+                inviteeEmail,
+            });
+            if (result.success && result.invitationLink) {
+                setGeneratedLink(result.invitationLink);
+                toast({ title: 'Invitation Ready!', description: 'The invitation link has been generated.' });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Invitation Failed', description: error.message });
+        } finally {
+            setIsInviting(false);
+        }
+    };
+    
+    const copyLink = () => {
+        navigator.clipboard.writeText(generatedLink);
+        toast({ title: 'Link Copied!' });
+    };
+
+    const resetAndClose = () => {
+        setInviteeName('');
+        setInviteeEmail('');
+        setGeneratedLink('');
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={resetAndClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Invite a Co-Teacher</DialogTitle>
+                    <DialogDescription>
+                        Enter your co-teacher's name and email to generate a unique invitation link.
+                    </DialogDescription>
+                </DialogHeader>
+                 {generatedLink ? (
+                    <div className="space-y-4 py-4">
+                        <p className="font-semibold">Invitation Link Generated!</p>
+                        <p className="text-sm text-muted-foreground">Please copy this link and send it to your co-teacher. This is a single-use link.</p>
+                        <div className="flex items-center gap-2">
+                            <Input readOnly value={generatedLink} />
+                            <Button onClick={copyLink} size="icon">
+                                <Copy className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="invitee-name">Co-Teacher's Name</Label>
+                            <Input id="invitee-name" value={inviteeName} onChange={(e) => setInviteeName(e.target.value)} disabled={isInviting} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="invitee-email">Co-Teacher's Email</Label>
+                            <Input id="invitee-email" type="email" value={inviteeEmail} onChange={(e) => setInviteeEmail(e.target.value)} disabled={isInviting} />
+                        </div>
+                    </div>
+                )}
+                <DialogFooter>
+                    <Button variant="outline" onClick={resetAndClose}>Close</Button>
+                    {!generatedLink && (
+                        <Button onClick={handleInvite} disabled={isInviting || !inviteeName || !inviteeEmail}>
+                            {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Generate Link
+                        </Button>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 export default function TeacherProfilePage() {
     const router = useRouter();
@@ -53,6 +155,9 @@ export default function TeacherProfilePage() {
 
     // New state for sagas
     const [newSagaName, setNewSagaName] = useState('');
+
+    // New state for co-teacher dialog
+    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -182,152 +287,168 @@ export default function TeacherProfilePage() {
     }
 
     return (
-        <div 
-            className="flex min-h-screen w-full flex-col bg-cover bg-center"
-            style={{
-              backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
-            }}
-        >
-            <TeacherHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-2xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Return to Podium
-                    </Button>
+        <>
+            <InviteCoTeacherDialog isOpen={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} teacher={teacher} teacherName={profile.name} />
+            <div 
+                className="flex min-h-screen w-full flex-col bg-cover bg-center"
+                style={{
+                  backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
+                }}
+            >
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="max-w-2xl mx-auto space-y-6">
+                        <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Return to Podium
+                        </Button>
 
-                    <Card className="bg-card/90 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle>My Profile</CardTitle>
-                            <CardDescription>Update your personal and school information here.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <Card className="bg-card/90 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle>My Profile</CardTitle>
+                                <CardDescription>Update your personal and school information here.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex flex-col sm:flex-row items-center gap-6">
+                                    <div className="space-y-2">
+                                        <Label>Profile Picture</Label>
+                                        <div className="w-32 h-32 relative rounded-full overflow-hidden border-4 border-primary">
+                                            {avatarPreview ? (
+                                                <Image src={avatarPreview} alt="Avatar Preview" layout="fill" className="object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-secondary flex items-center justify-center text-muted-foreground">
+                                                    No Image
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="w-full">
+                                        <Label htmlFor="avatar-upload">Upload New Avatar</Label>
+                                        <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarFileChange} />
+                                    </div>
+                                </div>
                                 <div className="space-y-2">
-                                    <Label>Profile Picture</Label>
-                                    <div className="w-32 h-32 relative rounded-full overflow-hidden border-4 border-primary">
-                                        {avatarPreview ? (
-                                            <Image src={avatarPreview} alt="Avatar Preview" layout="fill" className="object-cover" />
+                                    <Label htmlFor="name">Full Name</Label>
+                                    <Input id="name" name="name" value={profile.name} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="characterName">Character Name (Optional)</Label>
+                                    <Input id="characterName" name="characterName" value={profile.characterName || ''} onChange={handleInputChange} placeholder="e.g., The Grandmaster" />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="contactEmail">Contact Email</Label>
+                                    <Input id="contactEmail" name="contactEmail" type="email" value={profile.contactEmail || ''} onChange={handleInputChange} />
+                                    <p className="text-xs text-muted-foreground">This does not change your login email.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="schoolName">School Name</Label>
+                                    <Input id="schoolName" name="schoolName" value={profile.schoolName} onChange={handleInputChange} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="address">School Address</Label>
+                                    <Input id="address" name="address" value={profile.address || ''} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="className">Guild Name (Class Name)</Label>
+                                    <Input id="className" name="className" value={profile.className} onChange={handleInputChange} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="bio">Bio</Label>
+                                    <Textarea id="bio" name="bio" value={profile.bio || ''} onChange={handleInputChange} placeholder="A short bio for your creator profile in the Royal Library." />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="subjectsTaught">Subjects Taught</Label>
+                                    <Input id="subjectsTaught" name="subjectsTaught" value={profile.subjectsTaught?.join(', ') || ''} onChange={handleSubjectsChange} placeholder="e.g., History, Mathematics, Science" />
+                                    <p className="text-xs text-muted-foreground">Enter subjects separated by commas.</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-card/90 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle>My Sagas</CardTitle>
+                                <CardDescription>Create names for overarching storylines that connect multiple Quest Hubs.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-saga-name">New Saga Name</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="new-saga-name"
+                                            value={newSagaName}
+                                            onChange={(e) => setNewSagaName(e.target.value)}
+                                            placeholder="e.g., The Dragon's Awakening"
+                                        />
+                                        <Button onClick={handleAddSaga}>
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Saga
+                                        </Button>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div>
+                                    <h4 className="font-semibold mb-2">Existing Sagas:</h4>
+                                    <div className="space-y-2">
+                                        {(profile.sagas && profile.sagas.length > 0) ? (
+                                            profile.sagas.map((saga, index) => (
+                                                <div key={index} className="flex items-center justify-between p-2 bg-secondary rounded-md">
+                                                    <span className="font-medium">{saga}</span>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveSaga(index)}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            ))
                                         ) : (
-                                            <div className="w-full h-full bg-secondary flex items-center justify-center text-muted-foreground">
-                                                No Image
-                                            </div>
+                                            <p className="text-sm text-muted-foreground">You haven't created any sagas yet.</p>
                                         )}
                                     </div>
                                 </div>
-                                <div className="w-full">
-                                    <Label htmlFor="avatar-upload">Upload New Avatar</Label>
-                                    <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarFileChange} />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
-                                <Input id="name" name="name" value={profile.name} onChange={handleInputChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="characterName">Character Name (Optional)</Label>
-                                <Input id="characterName" name="characterName" value={profile.characterName || ''} onChange={handleInputChange} placeholder="e.g., The Grandmaster" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="contactEmail">Contact Email</Label>
-                                <Input id="contactEmail" name="contactEmail" type="email" value={profile.contactEmail || ''} onChange={handleInputChange} />
-                                <p className="text-xs text-muted-foreground">This does not change your login email.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="schoolName">School Name</Label>
-                                <Input id="schoolName" name="schoolName" value={profile.schoolName} onChange={handleInputChange} />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="address">School Address</Label>
-                                <Input id="address" name="address" value={profile.address || ''} onChange={handleInputChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="className">Guild Name (Class Name)</Label>
-                                <Input id="className" name="className" value={profile.className} onChange={handleInputChange} />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="bio">Bio</Label>
-                                <Textarea id="bio" name="bio" value={profile.bio || ''} onChange={handleInputChange} placeholder="A short bio for your creator profile in the Royal Library." />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="subjectsTaught">Subjects Taught</Label>
-                                <Input id="subjectsTaught" name="subjectsTaught" value={profile.subjectsTaught?.join(', ') || ''} onChange={handleSubjectsChange} placeholder="e.g., History, Mathematics, Science" />
-                                <p className="text-xs text-muted-foreground">Enter subjects separated by commas.</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                        
+                         <Card className="bg-card/90 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle>Co-Teacher Management</CardTitle>
+                                <CardDescription>Invite other teachers to help manage your guild.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Button onClick={() => setIsInviteDialogOpen(true)}>
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Invite a Co-Teacher
+                                </Button>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="bg-card/90 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle>My Sagas</CardTitle>
-                            <CardDescription>Create names for overarching storylines that connect multiple Quest Hubs.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="new-saga-name">New Saga Name</Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        id="new-saga-name"
-                                        value={newSagaName}
-                                        onChange={(e) => setNewSagaName(e.target.value)}
-                                        placeholder="e.g., The Dragon's Awakening"
-                                    />
-                                    <Button onClick={handleAddSaga}>
-                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Saga
-                                    </Button>
-                                </div>
-                            </div>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Existing Sagas:</h4>
-                                <div className="space-y-2">
-                                    {(profile.sagas && profile.sagas.length > 0) ? (
-                                        profile.sagas.map((saga, index) => (
-                                            <div key={index} className="flex items-center justify-between p-2 bg-secondary rounded-md">
-                                                <span className="font-medium">{saga}</span>
-                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSaga(index)}>
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground">You haven't created any sagas yet.</p>
-                                    )}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                         <Card className="bg-card/90 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle>Billing & Subscription</CardTitle>
+                                <CardDescription>Manage your Academy of Heroes plan.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-start gap-4">
+                                {isBeta ? (
+                                    <p className="text-destructive font-bold p-4 border-l-4 border-destructive bg-destructive/10 rounded-r-md">
+                                        Subscription and payment features are disabled during the BETA testing period.
+                                    </p>
+                                ) : (
+                                    <>
+                                        <div className="p-4 border rounded-md w-full">
+                                            <p className="font-semibold">Current Plan: <span className="text-primary">Premium</span></p>
+                                            <p className="text-sm text-muted-foreground">Your plan renews on September 1, 2025.</p>
+                                        </div>
+                                        <Button disabled><CreditCard className="mr-2 h-4 w-4" /> Manage Subscription</Button>
+                                        <p className="text-xs text-muted-foreground">Subscription management is handled by our secure third-party provider.</p>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                     <Card className="bg-card/90 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle>Billing & Subscription</CardTitle>
-                            <CardDescription>Manage your Academy of Heroes plan.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-start gap-4">
-                            {isBeta ? (
-                                <p className="text-destructive font-bold p-4 border-l-4 border-destructive bg-destructive/10 rounded-r-md">
-                                    Subscription and payment features are disabled during the BETA testing period.
-                                </p>
-                            ) : (
-                                <>
-                                    <div className="p-4 border rounded-md w-full">
-                                        <p className="font-semibold">Current Plan: <span className="text-primary">Premium</span></p>
-                                        <p className="text-sm text-muted-foreground">Your plan renews on September 1, 2025.</p>
-                                    </div>
-                                    <Button disabled><CreditCard className="mr-2 h-4 w-4" /> Manage Subscription</Button>
-                                    <p className="text-xs text-muted-foreground">Subscription management is handled by our secure third-party provider.</p>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <div className="flex justify-end">
-                        <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving}>
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Save Changes
-                        </Button>
+                        <div className="flex justify-end">
+                            <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving}>
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Save Changes
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            </main>
-        </div>
+                </main>
+            </div>
+        </>
     )
 }

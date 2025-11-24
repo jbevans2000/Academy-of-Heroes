@@ -1,4 +1,5 @@
 
+
 import type { AvatarLogEntry } from './avatar-log';
 
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
@@ -32,6 +33,8 @@ export type Teacher = {
     isCompanyChatActive?: boolean;
     bio?: string; // For Royal Library
     subjectsTaught?: string[]; // For Royal Library
+    accountType?: 'main' | 'co-teacher'; // New field for co-teacher role
+    mainTeacherUid?: string; // For co-teachers, the UID of the main teacher
 }
 
 export type Student = {
