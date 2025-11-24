@@ -32,6 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import jsPDF from 'jspdf';
+import Image from 'next/image';
 
 
 interface GuildHallMessage {
@@ -47,8 +48,9 @@ interface GuildHallMessage {
 export default function GuildHallPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [teacher, setTeacher] = useState<User | null>(null);
-    const [teacherData, setTeacherData] = useState<{ name: string, characterName?: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean } | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [teacherData, setTeacherData] = useState<Teacher | null>(null);
+    const [mainTeacherUid, setMainTeacherUid] = useState<string | null>(null);
     const [messages, setMessages] = useState<GuildHallMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -58,9 +60,20 @@ export default function GuildHallPage() {
     const [isClearing, setIsClearing] = useState(false);
     
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, user => {
-            if (user) {
-                setTeacher(user);
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                const teacherDocRef = doc(db, 'teachers', currentUser.uid);
+                const teacherDocSnap = await getDoc(teacherDocRef);
+                if (teacherDocSnap.exists()) {
+                    const data = teacherDocSnap.data();
+                    setTeacherData({ id: teacherDocSnap.id, ...data } as Teacher);
+                    if (data.accountType === 'co-teacher' && data.mainTeacherUid) {
+                        setMainTeacherUid(data.mainTeacherUid);
+                    } else {
+                        setMainTeacherUid(currentUser.uid);
+                    }
+                }
             } else {
                 router.push('/teacher/login');
             }
@@ -69,33 +82,39 @@ export default function GuildHallPage() {
     }, [router]);
 
     useEffect(() => {
-        if (!teacher) return;
-        
-        const teacherRef = doc(db, 'teachers', teacher.uid);
-        const unsubTeacher = onSnapshot(teacherRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setTeacherData(docSnap.data() as { name: string, characterName?: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean });
+        if (!mainTeacherUid) return;
+
+        const unsubscribers: (() => void)[] = [];
+
+        const mainTeacherRef = doc(db, 'teachers', mainTeacherUid);
+        unsubscribers.push(onSnapshot(mainTeacherRef, (docSnap) => {
+             if (docSnap.exists()) {
+                // We read settings from the main teacher, but the local teacherData holds the logged-in user's name
+                const mainData = docSnap.data();
+                setTeacherData(prev => ({
+                    ...prev!,
+                    isChatEnabled: mainData.isChatEnabled,
+                    isCompanyChatActive: mainData.isCompanyChatActive,
+                }));
             }
-        });
-        
-        const messagesQuery = query(collection(db, 'teachers', teacher.uid, 'guildHallMessages'), orderBy('timestamp', 'asc'));
-        const unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
+        }));
+
+        const messagesQuery = query(collection(db, 'teachers', mainTeacherUid, 'guildHallMessages'), orderBy('timestamp', 'asc'));
+        unsubscribers.push(onSnapshot(messagesQuery, (snapshot) => {
             setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GuildHallMessage)));
             setIsLoading(false);
-        });
+        }));
 
-        const companiesQuery = query(collection(db, 'teachers', teacher.uid, 'companies'));
-        const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
+        const companiesQuery = query(collection(db, 'teachers', mainTeacherUid, 'companies'));
+        unsubscribers.push(onSnapshot(companiesQuery, (snapshot) => {
             setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
-        });
+        }));
 
         return () => {
-            unsubTeacher();
-            unsubMessages();
-            unsubCompanies();
+            unsubscribers.forEach(unsub => unsub());
         };
 
-    }, [teacher]);
+    }, [mainTeacherUid]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,14 +123,14 @@ export default function GuildHallPage() {
     useEffect(scrollToBottom, [messages]);
     
     const handleSendMessage = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (!newMessage.trim() || !teacher || !teacherData) return;
+        e?.preventDefault();
+        if (!newMessage.trim() || !user || !teacherData || !mainTeacherUid) return;
         
         setIsSending(true);
         try {
             await sendGuildHallMessage({
-                teacherUid: teacher.uid,
-                senderUid: teacher.uid,
+                teacherUid: mainTeacherUid, // Post to main teacher's hall
+                senderUid: user.uid, // But as the logged-in user
                 senderName: teacherData.characterName || teacherData.name,
                 text: newMessage,
                 isTeacher: true,
@@ -133,18 +152,18 @@ export default function GuildHallPage() {
     };
 
     const handleToggleSetting = async (field: 'isChatEnabled' | 'isCompanyChatActive', enabled: boolean) => {
-        if (!teacher) return;
-        const teacherRef = doc(db, 'teachers', teacher.uid);
-        await updateDoc(teacherRef, { [field]: enabled });
+        if (!mainTeacherUid) return;
+        const mainTeacherRef = doc(db, 'teachers', mainTeacherUid);
+        await updateDoc(mainTeacherRef, { [field]: enabled });
         let featureName = field === 'isChatEnabled' ? 'Chat' : 'Company Chat';
         toast({ title: `${featureName} is now ${enabled ? 'ENABLED' : 'DISABLED'}` });
     };
     
      const handleClearChat = async () => {
-        if (!teacher) return;
+        if (!mainTeacherUid) return;
         setIsClearing(true);
         try {
-            const result = await clearGuildHallChat({ teacherUid: teacher.uid });
+            const result = await clearGuildHallChat({ teacherUid: mainTeacherUid });
             if (result.success) {
                 toast({ title: "Chat Cleared", description: result.message });
             } else {
@@ -268,7 +287,7 @@ export default function GuildHallPage() {
                     {isCompanyChatActive && (
                         <div className="bg-primary/80 backdrop-blur-sm text-primary-foreground p-3 rounded-lg flex items-center justify-center gap-2">
                             <Users className="h-5 w-5" />
-                            <h3 className="font-bold">Company Chat Mode is ACTIVE.</h3>
+                            <h3 className="font-bold">Company Chat Mode is ACTIVE. Only members of the same company will see each other's messages.</h3>
                         </div>
                     )}
                     <Card className="h-[75vh] flex flex-col bg-card/80 backdrop-blur-sm">
