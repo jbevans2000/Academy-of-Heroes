@@ -64,7 +64,7 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
     }
 
     try {
-        const adminDb = getAdminDb(); // Get DB instance when needed
+        const adminAuth = getAdminAuth();
         
         // --- New Step: Find and delete co-teachers ---
         const coTeachersQuery = query(collection(db, 'teachers'), where('mainTeacherUid', '==', teacherUid));
@@ -98,15 +98,19 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
         
         await batch.commit();
         
-        // This part uses the Admin SDK and might still fail if not configured,
-        // but the data deletion will have already succeeded.
+        // Delete the authentication user
         try {
-            await adminDb.collection('deleted-users').doc(teacherUid).set({ deletionRequested: true });
-        } catch (adminError) {
-             console.warn("Admin SDK action failed, but data was deleted. Manual auth cleanup may be needed.", adminError);
+            await adminAuth.deleteUser(teacherUid);
+        } catch (authError: any) {
+            console.warn(`Firestore data for teacher ${teacherUid} deleted, but auth account deletion failed.`, authError);
+            if (authError.code === 'auth/user-not-found') {
+                return { success: true, message: "Teacher data has been deleted. The login account was not found, so it may have already been removed." };
+            }
+            // Re-throw if it's not a 'user-not-found' error, as it might be something else to be aware of.
+            throw authError;
         }
 
-        return { success: true, message: "Teacher data has been deleted. Their login account will be removed upon their next login attempt." };
+        return { success: true, message: "Teacher data and account have been deleted." };
     } catch (error: any) {
         console.error("Error deleting teacher data:", error);
         return { success: false, error: error.message || 'An unknown error occurred while deleting the teacher data.' };
