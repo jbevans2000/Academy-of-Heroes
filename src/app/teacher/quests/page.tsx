@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen, Share } from 'lucide-react';
-import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc, query, orderBy, where } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { QuestHub, Chapter, Company, LibraryHub } from '@/lib/quests';
@@ -303,48 +303,63 @@ export default function QuestsPage() {
 
   useEffect(() => {
     if (!teacher) return;
-    setIsLoading(true);
-
-    const hubsRef = collection(db, 'teachers', teacher.uid, 'questHubs');
-    const chaptersRef = collection(db, 'teachers', teacher.uid, 'chapters');
-    const teacherRef = doc(db, 'teachers', teacher.uid);
-    const companiesRef = collection(db, 'teachers', teacher.uid, 'companies');
-    const libraryHubsRef = collection(db, 'library_hubs'); 
-
-    const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
-        const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
-        setHubs(hubsData);
-    });
     
-    const unsubChapters = onSnapshot(chaptersRef, (querySnapshot) => {
-        const chaptersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-        setChapters(chaptersData);
-    });
-    
-    const unsubTeacher = onSnapshot(teacherRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            setTeacherData(data); // Store all teacher data
-            setWorldMapUrl(data.worldMapUrl || '');
+    let teacherUidToUse = teacher.uid;
+    let unsubscribers: (() => void)[] = [];
+
+    const setupListeners = async () => {
+        setIsLoading(true);
+
+        const teacherDocRef = doc(db, 'teachers', teacher.uid);
+        const teacherDocSnap = await getDoc(teacherDocRef);
+        if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+            teacherUidToUse = teacherDocSnap.data().mainTeacherUid;
         }
-    });
 
-    const unsubCompanies = onSnapshot(companiesRef, (snapshot) => {
-      setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
-    });
+        if (!teacherUidToUse) {
+            setIsLoading(false);
+            return;
+        }
+
+        const hubsRef = collection(db, 'teachers', teacherUidToUse, 'questHubs');
+        const chaptersRef = collection(db, 'teachers', teacherUidToUse, 'chapters');
+        const teacherRef = doc(db, 'teachers', teacherUidToUse);
+        const companiesRef = collection(db, 'teachers', teacherUidToUse, 'companies');
+        const libraryHubsRef = collection(db, 'library_hubs');
+
+        unsubscribers.push(onSnapshot(hubsRef, (querySnapshot) => {
+            const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
+            setHubs(hubsData);
+        }));
+
+        unsubscribers.push(onSnapshot(chaptersRef, (querySnapshot) => {
+            const chaptersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+            setChapters(chaptersData);
+        }));
+
+        unsubscribers.push(onSnapshot(teacherRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setTeacherData(data);
+                setWorldMapUrl(data.worldMapUrl || '');
+            }
+        }));
+
+        unsubscribers.push(onSnapshot(companiesRef, (snapshot) => {
+            setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+        }));
+
+        unsubscribers.push(onSnapshot(libraryHubsRef, (snapshot) => {
+            setAllLibraryHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LibraryHub)));
+        }));
+
+        setIsLoading(false);
+    };
     
-    const unsubLibrary = onSnapshot(libraryHubsRef, (snapshot) => {
-        setAllLibraryHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LibraryHub)));
-    });
-
-    setIsLoading(false);
+    setupListeners();
 
     return () => {
-        unsubHubs();
-        unsubChapters();
-        unsubTeacher();
-        unsubCompanies();
-        unsubLibrary();
+        unsubscribers.forEach(unsub => unsub && unsub());
     };
   }, [teacher]);
   
