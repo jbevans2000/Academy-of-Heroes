@@ -192,20 +192,18 @@ function InviteCoTeacherDialog({ isOpen, onOpenChange, teacher, teacherName }: {
                     </div>
                 )}
                  {step === 2 && (
-                    <ScrollArea className="h-72 w-full rounded-md border p-4">
-                        <div className="space-y-4">
-                            {Object.entries(allPermissions).map(([key, { label }]) => (
-                                <div key={key} className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={`perm-${key}`}
-                                        checked={permissions[key as keyof Permissions]}
-                                        onCheckedChange={(checked) => handlePermissionChange(key as keyof Permissions, !!checked)}
-                                    />
-                                    <Label htmlFor={`perm-${key}`}>{label}</Label>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
+                    <div className="space-y-4">
+                        {Object.entries(allPermissions).map(([key, { label }]) => (
+                            <div key={key} className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={`perm-${key}`}
+                                    checked={permissions[key as keyof Permissions]}
+                                    onCheckedChange={(checked) => handlePermissionChange(key as keyof Permissions, !!checked)}
+                                />
+                                <Label htmlFor={`perm-${key}`}>{label}</Label>
+                            </div>
+                        ))}
+                    </div>
                 )}
                  {step === 3 && createdCredentials && (
                     <div className="py-4 space-y-4">
@@ -278,20 +276,18 @@ function EditPermissionsDialog({ isOpen, onOpenChange, coTeacher }: { isOpen: bo
                         Grant or revoke access to specific features for this co-teacher.
                     </DialogDescription>
                 </DialogHeader>
-                 <ScrollArea className="h-72 w-full rounded-md border p-4">
-                    <div className="space-y-4">
-                        {Object.entries(allPermissions).map(([key, { label }]) => (
-                            <div key={key} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`edit-perm-${key}`}
-                                    checked={permissions[key as keyof Permissions]}
-                                    onCheckedChange={(checked) => handlePermissionChange(key as keyof Permissions, !!checked)}
-                                />
-                                <Label htmlFor={`edit-perm-${key}`}>{label}</Label>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
+                <div className="space-y-4">
+                    {Object.entries(allPermissions).map(([key, { label }]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                            <Checkbox
+                                id={`edit-perm-${key}`}
+                                checked={permissions[key as keyof Permissions]}
+                                onCheckedChange={(checked) => handlePermissionChange(key as keyof Permissions, !!checked)}
+                            />
+                            <Label htmlFor={`edit-perm-${key}`}>{label}</Label>
+                        </div>
+                    ))}
+                </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button onClick={handleSave} disabled={isSaving}>
@@ -515,7 +511,7 @@ export default function TeacherProfilePage() {
             <div 
                 className="flex min-h-screen w-full flex-col bg-cover bg-center"
                 style={{
-                  backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
+                  backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
                 }}
             >
                 <TeacherHeader />
