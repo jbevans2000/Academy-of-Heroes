@@ -4,14 +4,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDoc, doc, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Mission } from '@/lib/missions';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, BookOpen, PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookMarked, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
