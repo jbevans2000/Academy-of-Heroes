@@ -34,11 +34,17 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [hasUnreadAdminMessages, setHasUnreadAdminMessages] = useState(false);
   const [hasNewBroadcasts, setHasNewBroadcasts] = useState(false);
+  const [isCoTeacher, setIsCoTeacher] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
         if(currentUser) {
             setTeacher(currentUser);
+             const teacherDocRef = doc(db, 'teachers', currentUser.uid);
+            const teacherDocSnap = await getDoc(teacherDocRef);
+            if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                setIsCoTeacher(true);
+            }
         }
     });
 
@@ -132,10 +138,12 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
                   Return to Admin Dashboard
               </Button>
           )}
-          <Button variant="outline" onClick={() => router.push('/teacher/library')}>
-              <BookOpen className="mr-2 h-5 w-5" />
-              The Royal Library
-          </Button>
+          {!isCoTeacher && (
+            <Button variant="outline" onClick={() => router.push('/teacher/library')}>
+                <BookOpen className="mr-2 h-5 w-5" />
+                The Royal Library
+            </Button>
+          )}
           <Button variant="outline" onClick={() => router.push('/teacher/broadcasts')} className="relative">
                 <Rss className="mr-2 h-5 w-5" />
                 Announcements
