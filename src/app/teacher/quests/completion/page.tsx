@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 
 import type { Student, QuestHub, Chapter } from '@/lib/data';
@@ -31,6 +31,7 @@ export default function ManageQuestCompletionPage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [teacherUidToUse, setTeacherUidToUse] = useState<string | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [hubs, setHubs] = useState<QuestHub[]>([]);
     const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -49,19 +50,29 @@ export default function ManageQuestCompletionPage() {
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, user => {
-            if (user) setTeacher(user);
-            else router.push('/teacher/login');
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                setTeacher(user);
+                const teacherDocRef = doc(db, 'teachers', user.uid);
+                const teacherDocSnap = await getDoc(teacherDocRef);
+                if (teacherDocSnap.exists() && teacherDocSnap.data().accountType === 'co-teacher') {
+                    setTeacherUidToUse(teacherDocSnap.data().mainTeacherUid);
+                } else {
+                    setTeacherUidToUse(user.uid);
+                }
+            } else {
+                router.push('/teacher/login');
+            }
         });
         return () => unsubscribe();
     }, [router]);
 
     useEffect(() => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
 
         const fetchSettings = async () => {
             setIsLoading(true);
-            const settings = await getQuestSettings(teacher.uid);
+            const settings = await getQuestSettings(teacherUidToUse);
             setGlobalApproval(settings.globalApprovalRequired);
             setIsDailyLimitEnabled(settings.isDailyLimitEnabled);
             setStudentOverrides(settings.studentOverrides || {});
@@ -69,35 +80,34 @@ export default function ManageQuestCompletionPage() {
 
         fetchSettings();
 
-        const studentsQuery = query(collection(db, 'teachers', teacher.uid, 'students'), orderBy('studentName'));
-        const unsubStudents = onSnapshot(studentsQuery, snapshot => {
+        const unsubscribers: (() => void)[] = [];
+
+        const studentsQuery = query(collection(db, 'teachers', teacherUidToUse, 'students'), orderBy('studentName'));
+        unsubscribers.push(onSnapshot(studentsQuery, snapshot => {
             setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
             setIsLoading(false);
-        });
+        }));
 
-        const requestsQuery = query(collection(db, 'teachers', teacher.uid, 'pendingQuestRequests'), orderBy('requestedAt', 'desc'));
-        const unsubRequests = onSnapshot(requestsQuery, snapshot => {
+        const requestsQuery = query(collection(db, 'teachers', teacherUidToUse, 'pendingQuestRequests'), orderBy('requestedAt', 'desc'));
+        unsubscribers.push(onSnapshot(requestsQuery, snapshot => {
             setPendingRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestCompletionRequest)));
-        });
+        }));
         
-        const hubsQuery = query(collection(db, 'teachers', teacher.uid, 'questHubs'), orderBy('hubOrder'));
-        const unsubHubs = onSnapshot(hubsQuery, (snapshot) => {
+        const hubsQuery = query(collection(db, 'teachers', teacherUidToUse, 'questHubs'), orderBy('hubOrder'));
+        unsubscribers.push(onSnapshot(hubsQuery, (snapshot) => {
             setHubs(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as QuestHub)))
-        });
+        }));
 
-        const chaptersQuery = query(collection(db, 'teachers', teacher.uid, 'chapters'));
-        const unsubChapters = onSnapshot(chaptersQuery, (snapshot) => {
+        const chaptersQuery = query(collection(db, 'teachers', teacherUidToUse, 'chapters'));
+        unsubscribers.push(onSnapshot(chaptersQuery, (snapshot) => {
             setChapters(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Chapter)))
-        });
+        }));
 
         return () => {
-            unsubStudents();
-            unsubRequests();
-            unsubHubs();
-            unsubChapters();
+            unsubscribers.forEach(unsub => unsub());
         };
 
-    }, [teacher]);
+    }, [teacherUidToUse]);
     
     const handleOpenQuestProgressDialog = (student: Student) => {
         setSelectedStudent(student);
@@ -105,12 +115,12 @@ export default function ManageQuestCompletionPage() {
     };
 
     const handleGlobalApprovalToggle = async (checked: boolean) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         setIsUpdating(true);
         setGlobalApproval(checked);
         setStudentOverrides({});
         
-        const result = await updateQuestSettings(teacher.uid, { 
+        const result = await updateQuestSettings(teacherUidToUse, { 
             globalApprovalRequired: checked,
             studentOverrides: {}
         });
@@ -125,10 +135,10 @@ export default function ManageQuestCompletionPage() {
     };
 
     const handleDailyLimitToggle = async (checked: boolean) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         setIsUpdating(true);
         setIsDailyLimitEnabled(checked);
-        const result = await updateQuestSettings(teacher.uid, { isDailyLimitEnabled: checked });
+        const result = await updateQuestSettings(teacherUidToUse, { isDailyLimitEnabled: checked });
         if (!result.success) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
             setIsDailyLimitEnabled(!checked);
@@ -139,7 +149,7 @@ export default function ManageQuestCompletionPage() {
     }
 
     const handleStudentToggle = async (studentUid: string, checked: boolean) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         
         const originalOverrides = { ...studentOverrides };
         const newOverrides = { ...studentOverrides };
@@ -152,7 +162,7 @@ export default function ManageQuestCompletionPage() {
 
         setStudentOverrides(newOverrides);
         setIsUpdating(true);
-        const result = await updateQuestSettings(teacher.uid, { studentOverrides: newOverrides });
+        const result = await updateQuestSettings(teacherUidToUse, { studentOverrides: newOverrides });
          if (!result.success) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
             setStudentOverrides(originalOverrides);
@@ -161,12 +171,12 @@ export default function ManageQuestCompletionPage() {
     };
 
     const handleRequest = async (requestId: string, approve: boolean) => {
-        if (!teacher) return;
+        if (!teacherUidToUse) return;
         setIsProcessing(requestId);
         try {
             const result = approve
-                ? await approveChapterCompletion({ teacherUid: teacher.uid, requestId })
-                : await denyChapterCompletion(teacher.uid, requestId);
+                ? await approveChapterCompletion({ teacherUid: teacherUidToUse, requestId })
+                : await denyChapterCompletion(teacherUidToUse, requestId);
             
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
@@ -181,10 +191,10 @@ export default function ManageQuestCompletionPage() {
     };
     
     const handleApproveAll = async () => {
-        if (!teacher || pendingRequests.length === 0) return;
+        if (!teacherUidToUse || pendingRequests.length === 0) return;
         setIsProcessing('all');
         try {
-            const result = await approveAllPending(teacher.uid);
+            const result = await approveAllPending(teacherUidToUse);
              if (result.success) {
                 toast({ title: 'All Approved!', description: `${result.count} request(s) have been approved.` });
             } else {
@@ -242,12 +252,12 @@ export default function ManageQuestCompletionPage() {
 
     return (
         <>
-        {selectedStudent && teacher && (
+        {selectedStudent && teacherUidToUse && (
             <SetQuestProgressDialog
                 isOpen={isQuestProgressOpen}
                 onOpenChange={setIsQuestProgressOpen}
                 studentsToUpdate={[selectedStudent]}
-                teacherUid={teacher.uid}
+                teacherUid={teacherUidToUse}
                 hubs={hubs}
                 chapters={chapters}
             />
