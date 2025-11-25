@@ -60,7 +60,6 @@ export async function createCoTeacherAccount(input: CreateCoTeacherInput): Promi
         // Copy relevant fields from the main teacher
         schoolName: mainTeacherData.schoolName || '',
         className: mainTeacherData.className || '',
-        levelingTable: mainTeacherData.levelingTable || {},
         permissions: permissions, // Save the permissions object
         createdAt: serverTimestamp(),
     });
