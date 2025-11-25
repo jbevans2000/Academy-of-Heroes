@@ -191,69 +191,55 @@ export default function Dashboard() {
         const isAdmin = adminSnap.exists();
         const viewingTeacherId = searchParams.get('teacherId');
 
-        let teacherIdToUseForData = null; // UID for fetching students, quests, etc.
-        let teacherDocRefForPerms = doc(db, 'teachers', user.uid); // Doc to get perms/profile from
+        let effectiveUser = user;
+        let teacherIdToUseForData: string | null = null;
+        let docRefForPerms;
 
         if (isAdmin && viewingTeacherId) {
-            // Admin is previewing a teacher
             teacherIdToUseForData = viewingTeacherId;
-            teacherDocRefForPerms = doc(db, 'teachers', viewingTeacherId);
-            setTeacher({ uid: viewingTeacherId } as User); 
+            docRefForPerms = doc(db, 'teachers', viewingTeacherId);
             setIsAdminPreview(true);
+            effectiveUser = { uid: viewingTeacherId } as User;
         } else {
-            // Regular user (teacher or co-teacher)
-            setTeacher(user);
-            const userDocSnap = await getDoc(teacherDocRefForPerms);
+            const userDocSnap = await getDoc(doc(db, 'teachers', user.uid));
             if (userDocSnap.exists()) {
                 const userData = userDocSnap.data();
                 if (userData.accountType === 'co-teacher') {
                     teacherIdToUseForData = userData.mainTeacherUid;
                     setIsCoTeacher(true);
+                    docRefForPerms = userDocSnap.ref; // Co-teacher gets permissions from their own doc
                 } else {
                     teacherIdToUseForData = user.uid;
                     setIsCoTeacher(false);
+                    docRefForPerms = userDocSnap.ref; // Main teacher gets perms from their doc
                 }
             }
         }
         
+        setTeacher(effectiveUser);
         setTeacherUidToUse(teacherIdToUseForData);
 
-        if (teacherIdToUseForData) {
-            const checkWelcomeAndBroadcast = async () => {
-                const teacherPermsSnap = await getDoc(teacherDocRefForPerms);
-                if (!teacherPermsSnap.exists()) return;
-                const currentTeacherData = teacherPermsSnap.data() as TeacherData;
-
-                if (currentTeacherData.isNewlyRegistered && !isCoTeacher && !isAdmin) {
-                     const settings = await getGlobalSettings();
-                     if (settings.isFeedbackPanelVisible) {
-                        setShowBetaWelcomeDialog(true);
-                    } else {
-                        setShowWelcomeDialog(true);
+        if (docRefForPerms) {
+            const unsubPerms = onSnapshot(docRefForPerms, (teacherPermsSnap) => {
+                 if (teacherPermsSnap.exists()) {
+                    const data = teacherPermsSnap.data() as TeacherData;
+                    setTeacherData(data);
+                    setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
+                    setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
+                    setIsReminderActive(data.isDailyReminderActive ?? true);
+                    setRegenPercentage(data.dailyRegenPercentage ?? 0);
+                    if (data.isNewlyRegistered && !isCoTeacher && !isAdmin) {
+                        getGlobalSettings().then(settings => {
+                            if(settings.isFeedbackPanelVisible) {
+                                setShowBetaWelcomeDialog(true);
+                            } else {
+                                setShowWelcomeDialog(true);
+                            }
+                        });
                     }
-                } else if (!isAdminPreview && !isCoTeacher) {
-                     const settings = await getGlobalSettings();
-                     if (settings.broadcastMessageId) {
-                         const lastSeenTimestamp = currentTeacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
-                         const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
-                         const latestBroadcastQuery = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
-                         const latestBroadcastSnapshot = await getDocs(latestBroadcastQuery);
-
-                         if(!latestBroadcastSnapshot.empty) {
-                             const latestBroadcast = latestBroadcastSnapshot.docs[0].data();
-                             if (latestBroadcast.sentAt) {
-                                const latestTimestamp = latestBroadcast.sentAt.toDate();
-                                
-                                if (latestTimestamp > lastSeenTimestamp) {
-                                    setBroadcastMessage(latestBroadcast.message);
-                                    setIsBroadcastDialogOpen(true);
-                                }
-                             }
-                         }
-                     }
-                }
-            }
-            if(!isAdminPreview) checkWelcomeAndBroadcast();
+                 }
+            });
+            return () => unsubPerms();
         }
     });
 
@@ -266,23 +252,18 @@ export default function Dashboard() {
     let unsubscribers: any[] = [];
     
     const setupListeners = async () => {
-        // This ref now points to the current user (teacher or co-teacher)
-        const currentUserDocRef = doc(db, 'teachers', teacher.uid);
-        unsubscribers.push(onSnapshot(currentUserDocRef, (teacherSnap) => {
-            if (teacherSnap.exists()) {
-                const data = teacherSnap.data() as TeacherData;
-                setTeacherData(data); // This state holds the PERMISSIONS
-                setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
-                setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
-                setIsReminderActive(data.isDailyReminderActive ?? true);
-                setRegenPercentage(data.dailyRegenPercentage ?? 0);
-                
-                // Only a main teacher has a pendingCleanupBattleId
-                if (data.pendingCleanupBattleId) {
-                    setTimeout(() => {
-                        handleClearAllBattleStatus(true);
-                    }, 20000);
-                }
+        setIsLoading(true);
+
+        const mainTeacherRef = doc(db, 'teachers', teacherUidToUse);
+        unsubscribers.push(onSnapshot(mainTeacherRef, (teacherSnap) => {
+            if (teacherSnap.exists() && isCoTeacher) {
+                // If it's a co-teacher, we merge the main teacher's general settings
+                // with their own specific permissions which are already in teacherData state.
+                const mainData = teacherSnap.data() as TeacherData;
+                setTeacherData(prev => prev ? ({
+                    ...mainData, // Main teacher data
+                    ...prev, // Keep co-teacher's own data like name, email, and permissions
+                }) : mainData);
             }
         }));
 
@@ -322,7 +303,7 @@ export default function Dashboard() {
     return () => {
       unsubscribers.forEach(unsub => unsub && unsub());
     };
-  }, [teacherUidToUse, teacher]);
+  }, [teacherUidToUse, teacher, isCoTeacher]);
 
 
   const sortedStudents = useMemo(() => {
@@ -726,7 +707,7 @@ export default function Dashboard() {
     const visibleStudentUids = getVisibleStudentUids();
     const allVisibleSelected = visibleStudentUids.length > 0 && visibleStudentUids.every(uid => selectedStudents.includes(uid));
 
-    if (isLoading || !teacher) {
+    if (isLoading || !teacher || !teacherData) {
         return (
            <div className="flex min-h-screen w-full flex-col">
             <TeacherHeader permissions={teacherData?.permissions}/>
@@ -759,7 +740,7 @@ export default function Dashboard() {
                 }}
             />
             <div className="relative flex flex-col min-h-screen w-full">
-                <TeacherHeader permissions={teacherData?.permissions} />
+                <TeacherHeader permissions={teacherData.permissions} />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <ImpersonationBanner />
                     <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
@@ -1050,7 +1031,7 @@ export default function Dashboard() {
                         <Button variant="outline" onClick={() => handleOpenMessageCenter()} className="relative text-black border-black">
                             <MessageSquare className="mr-2 h-5 w-5" />
                             Student Messages
-                            {teacherData?.hasUnreadTeacherMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+                            {students.some(s => s.hasUnreadMessages) && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
                         </Button>
 
                         <Dialog open={isRewardsDialogOpen} onOpenChange={setIsRewardsDialogOpen}>
@@ -1326,3 +1307,5 @@ export default function Dashboard() {
         </div>
       );
 }
+
+    
