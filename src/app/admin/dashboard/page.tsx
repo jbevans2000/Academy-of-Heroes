@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where, Timestamp, writeBatch } from 'firebase/firestore';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, type User, signInWithCustomToken } from 'firebase/auth';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,7 +22,7 @@ import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-k
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { downloadAndZipHostingFiles } from '@/ai/flows/download-hosting-files';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power, Users, Archive, DatabaseZap, CornerDownRight } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power, Users, Archive, DatabaseZap, CornerDownRight, UserCheck } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -65,6 +65,7 @@ import PayPalTestButton from '@/components/admin/paypal-test-button';
 import { Switch } from '@/components/ui/switch';
 import { AdminSdkTester } from '@/components/admin/admin-sdk-tester';
 import { deleteTeacher as deleteTeacherData, deleteStudentData as deleteStudentAuthAndData } from '@/ai/flows/admin-actions';
+import { impersonateTeacher } from '@/ai/flows/impersonate-teacher';
 
 
 type SortDirection = 'asc' | 'desc';
@@ -195,6 +196,10 @@ export default function AdminDashboardPage() {
     
     // Hosting Backup State
     const [isBackingUp, setIsBackingUp] = useState(false);
+    
+    // Impersonation state
+    const [teacherToImpersonate, setTeacherToImpersonate] = useState<Teacher | null>(null);
+    const [isImpersonating, setIsImpersonating] = useState(false);
     
     const router = useRouter();
     const { toast } = useToast();
@@ -791,6 +796,23 @@ export default function AdminDashboardPage() {
         }
     };
     
+    const handleImpersonateTeacher = async () => {
+        if (!teacherToImpersonate || !user) return;
+        setIsImpersonating(true);
+        try {
+            const result = await impersonateTeacher(teacherToImpersonate.id, user.uid);
+            if (result.success && result.customToken) {
+                await signInWithCustomToken(auth, result.customToken);
+                router.push('/teacher/dashboard');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Impersonation Failed', description: error.message });
+            setIsImpersonating(false);
+        }
+    };
+    
     const hasUnreadMessages = useMemo(() => teachers.some(t => t.hasUnreadAdminMessages), [teachers]);
 
 
@@ -1134,7 +1156,10 @@ export default function AdminDashboardPage() {
                                                             {columnVisibility.school && <TableCell>{teacher.schoolName}</TableCell>}
                                                             {columnVisibility.studentCount && <TableCell>{teacher.studentCount}</TableCell>}
                                                             {columnVisibility.createdAt && <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>}
-                                                            <TableCell>
+                                                            <TableCell className="flex gap-1">
+                                                                <Button variant="outline" size="sm" onClick={() => setTeacherToImpersonate(teacher)}>
+                                                                    <UserCheck className="mr-2 h-4 w-4" /> Impersonate
+                                                                </Button>
                                                                 <Button variant="ghost" size="icon" onClick={() => setUserToDelete({ type: 'teacher', data: teacher })}>
                                                                     <Trash2 className="h-4 w-4 text-destructive"/>
                                                                 </Button>
@@ -1426,6 +1451,22 @@ export default function AdminDashboardPage() {
                                 <AlertDialogCancel disabled={isDeletingBroadcast}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleDeleteBroadcast} disabled={isDeletingBroadcast} className="bg-destructive hover:bg-destructive/90">
                                     {isDeletingBroadcast ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    <AlertDialog open={!!teacherToImpersonate} onOpenChange={() => setTeacherToImpersonate(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Impersonate {teacherToImpersonate?.name}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    You will be logged in as this teacher and will see the dashboard from their perspective. You can return to your admin account at any time.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isImpersonating}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleImpersonateTeacher} disabled={isImpersonating}>
+                                    {isImpersonating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Impersonate'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
