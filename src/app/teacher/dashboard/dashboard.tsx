@@ -191,48 +191,50 @@ export default function Dashboard() {
         const isAdmin = adminSnap.exists();
         const viewingTeacherId = searchParams.get('teacherId');
 
-        let teacherIdToFetch: string | null = null;
-        
+        let teacherIdToUseForData = null; // UID for fetching students, quests, etc.
+        let teacherDocRefForPerms = doc(db, 'teachers', user.uid); // Doc to get perms/profile from
+
         if (isAdmin && viewingTeacherId) {
-            teacherIdToFetch = viewingTeacherId;
+            // Admin is previewing a teacher
+            teacherIdToUseForData = viewingTeacherId;
+            teacherDocRefForPerms = doc(db, 'teachers', viewingTeacherId);
             setTeacher({ uid: viewingTeacherId } as User); 
             setIsAdminPreview(true);
         } else {
+            // Regular user (teacher or co-teacher)
             setTeacher(user);
-            const userDocRef = doc(db, 'teachers', user.uid);
-            const userDocSnap = await getDoc(userDocRef);
+            const userDocSnap = await getDoc(teacherDocRefForPerms);
             if (userDocSnap.exists()) {
                 const userData = userDocSnap.data();
                 if (userData.accountType === 'co-teacher') {
-                    teacherIdToFetch = userData.mainTeacherUid;
+                    teacherIdToUseForData = userData.mainTeacherUid;
                     setIsCoTeacher(true);
                 } else {
-                    teacherIdToFetch = user.uid;
+                    teacherIdToUseForData = user.uid;
                     setIsCoTeacher(false);
                 }
             }
         }
         
-        setTeacherUidToUse(teacherIdToFetch);
+        setTeacherUidToUse(teacherIdToUseForData);
 
-        if (teacherIdToFetch) {
+        if (teacherIdToUseForData) {
             const checkWelcomeAndBroadcast = async () => {
-                const teacherRef = doc(db, 'teachers', teacherIdToFetch!);
-                const teacherSnap = await getDoc(teacherRef);
-                if (!teacherSnap.exists()) return;
-                const teacherData = teacherSnap.data() as TeacherData;
+                const teacherPermsSnap = await getDoc(teacherDocRefForPerms);
+                if (!teacherPermsSnap.exists()) return;
+                const currentTeacherData = teacherPermsSnap.data() as TeacherData;
 
-                if (teacherData.isNewlyRegistered) {
+                if (currentTeacherData.isNewlyRegistered && !isCoTeacher && !isAdmin) {
                      const settings = await getGlobalSettings();
                      if (settings.isFeedbackPanelVisible) {
                         setShowBetaWelcomeDialog(true);
                     } else {
                         setShowWelcomeDialog(true);
                     }
-                } else if (!isAdminPreview) {
+                } else if (!isAdminPreview && !isCoTeacher) {
                      const settings = await getGlobalSettings();
                      if (settings.broadcastMessageId) {
-                         const lastSeenTimestamp = teacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
+                         const lastSeenTimestamp = currentTeacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
                          const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
                          const latestBroadcastQuery = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
                          const latestBroadcastSnapshot = await getDocs(latestBroadcastQuery);
@@ -251,7 +253,7 @@ export default function Dashboard() {
                      }
                 }
             }
-            checkWelcomeAndBroadcast();
+            if(!isAdminPreview) checkWelcomeAndBroadcast();
         }
     });
 
@@ -259,21 +261,23 @@ export default function Dashboard() {
   }, [searchParams, router]);
 
   useEffect(() => {
-    if (!teacherUidToUse) return;
+    if (!teacherUidToUse || !teacher) return;
     
     let unsubscribers: any[] = [];
     
     const setupListeners = async () => {
-      
-        const teacherRef = doc(db, 'teachers', teacherUidToUse);
-        unsubscribers.push(onSnapshot(teacherRef, (teacherSnap) => {
+        // This ref now points to the current user (teacher or co-teacher)
+        const currentUserDocRef = doc(db, 'teachers', teacher.uid);
+        unsubscribers.push(onSnapshot(currentUserDocRef, (teacherSnap) => {
             if (teacherSnap.exists()) {
                 const data = teacherSnap.data() as TeacherData;
-                setTeacherData(data);
+                setTeacherData(data); // This state holds the PERMISSIONS
                 setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
                 setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
                 setIsReminderActive(data.isDailyReminderActive ?? true);
                 setRegenPercentage(data.dailyRegenPercentage ?? 0);
+                
+                // Only a main teacher has a pendingCleanupBattleId
                 if (data.pendingCleanupBattleId) {
                     setTimeout(() => {
                         handleClearAllBattleStatus(true);
@@ -282,6 +286,7 @@ export default function Dashboard() {
             }
         }));
 
+        // These listeners point to the MAIN teacher's data for classroom content
         unsubscribers.push(onSnapshot(collection(db, "teachers", teacherUidToUse, "students"), (snapshot) => {
             const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
             setStudents(studentData);
@@ -317,7 +322,7 @@ export default function Dashboard() {
     return () => {
       unsubscribers.forEach(unsub => unsub && unsub());
     };
-  }, [teacherUidToUse]);
+  }, [teacherUidToUse, teacher]);
 
 
   const sortedStudents = useMemo(() => {
